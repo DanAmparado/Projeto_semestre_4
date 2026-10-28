@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatórios | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <form class="painel-filtro filtro" id="form-relatorio">
+      <div class="campo"><label for="tipo">Tipo de relatório</label>
+        <select id="tipo" required>
+          <option value="">Selecione</option>
+          <option>Previsão de demanda</option>
+          <option>Média de doações</option>
+          <option>Controle estatístico de processo (CEP)</option>
+          <option>Estudo de doador</option>
+        </select></div>
+      <div class="campo"><label for="ini">Data inicial</label><input id="ini" type="date" required></div>
+      <div class="campo"><label for="fim">Data final</label><input id="fim" type="date" required></div>
+      <button class="btn" type="submit">Gerar</button>
+    </form>
+    <section class="resultado" id="resultado" aria-live="polite">
+      <p class="resultado__vazio">Escolha o tipo e o período para gerar o relatório</p>
+    </section>
+  </main>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/relatorios.js"></script>
+</body>
+</html>

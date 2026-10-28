@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova doação | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <div class="abas" role="tablist">
+      <button class="aba" role="tab" id="aba-novo" aria-selected="true" data-modo="novo">Novo doador</button>
+      <button class="aba" role="tab" id="aba-rec" aria-selected="false" data-modo="recorrente">Doador recorrente</button>
+    </div>
+    <form class="painel-rosa doacao" id="form-doacao" novalidate>
+      <div class="doacao__grid">
+        <div>
+          <div class="campo"><label for="nome">Nome completo do documento</label><input id="nome" required></div>
+          <div class="campo"><label for="cpf">CPF</label><input id="cpf" inputmode="numeric" placeholder="000.000.000-00" required></div>
+          <div class="campo"><label for="rg">RG</label><input id="rg" required></div>
+          <div class="campo"><label for="nasc">Data de nascimento</label><input id="nasc" type="date" required></div>
+          <div class="doacao__salvar-linha"><button class="btn" type="button" id="btn-principal">Salvar</button></div>
+        </div>
+        <div class="doacao__divisor" aria-hidden="true"></div>
+        <div>
+          <div class="doacao__sinais">
+            <div class="campo"><label for="peso">Peso atual (kg)</label><input id="peso" type="number" min="1" step="0.1"></div>
+            <div class="campo"><label for="altura">Altura atual (cm)</label><input id="altura" type="number" min="1"></div>
+            <div class="campo"><label for="oxi">Oxigenação (%)</label><input id="oxi" type="number" min="1" max="100"></div>
+            <div class="campo"><label for="bpm">BPM</label><input id="bpm" type="number" min="1"></div>
+            <div class="campo"><label for="pmin">Pressão mínima</label><input id="pmin" type="number" min="1"></div>
+            <div class="campo"><label for="pmax">Pressão máxima</label><input id="pmax" type="number" min="1"></div>
+          </div>
+          <div class="doacao__acoes">
+            <div class="pode-doar">Pode doar?<div class="pode-doar__status" id="status" aria-live="polite">--</div></div>
+            <button class="btn btn--vermelho" type="button" id="btn-doar" disabled>Doar</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </main>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/nova-doacao.js"></script>
+</body>
+</html>

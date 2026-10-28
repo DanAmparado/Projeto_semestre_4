@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Novo cadastro | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <form class="painel-rosa cadastro" id="form-cadastro" novalidate>
+      <div class="cadastro__grid">
+        <div class="campo"><label for="nome">Nome completo</label><input id="nome" required></div>
+        <div class="campo"><label for="papel">Papel</label>
+          <select id="papel" required><option value="">Selecione</option><option value="administrador">Administrador</option><option value="operacional">Operacional</option></select></div>
+        <div class="campo"><label for="cpf">CPF</label><input id="cpf" inputmode="numeric" placeholder="000.000.000-00" required></div>
+        <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="campo"><label for="email">Email empresarial</label><input id="email" type="email" required></div>
+        <div class="campo"><label for="confirma">Confirme a senha</label><input id="confirma" type="password" autocomplete="new-password" required></div>
+        <div class="campo"><label for="tel">Telefone</label><input id="tel" inputmode="tel" placeholder="(00) 00000-0000" required></div>
+        <button class="btn btn--verde btn--grande cadastro__salvar" type="submit">Salvar</button>
+      </div>
+    </form>
+  </main>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/novo-cadastro.js"></script>
+</body>
+</html>
