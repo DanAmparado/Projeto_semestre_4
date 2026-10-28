@@ -1,0 +1,38 @@
+{
+  "name": "nosso-sangue-backend",
+  "version": "1.0.0",
+  "description": "API RESTful do projeto Nosso Sangue — PI 4º semestre DSM Fatec Franca",
+  "private": true,
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "db:push": "supabase db push",
+    "types": "supabase gen types typescript --local > src/types/database.ts",
+    "db:sync": "node scripts/sync-migrations.js",
+    "db:reset": "npm run db:sync && cd .. && supabase db reset"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "helmet": "^8.0.0",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
