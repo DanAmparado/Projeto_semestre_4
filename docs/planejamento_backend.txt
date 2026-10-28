@@ -1,0 +1,67 @@
+LISTA DE CORREÇÕES NECESSÁRIAS
+
+1. Criar a tabela `doacoes`, que é referenciada pelas funções estatísticas, pelo histórico do doador e por `movimentacoes_estoque.doacao_id`, mas não existe no script atual. Campos mínimos: id, usuario_id, hemocentro_id, tipo_sanguineo, data_doacao, status, peso, observacao, created_at. Criar índices por hemocentro/data e usuario/data.
+
+2. Criar a função `update_updated_at()`, usada pelo trigger da tabela `sensores`, mas não definida no documento.
+
+3. Corrigir a ordem de criação das tabelas: `doacoes` deve existir antes de `movimentacoes_estoque`, pois esta referencia `doacoes(id)`. Revisar também a ordem geral para evitar FKs apontando para tabelas inexistentes.
+
+4. Criar trigger/função para sincronizar `auth.users` com a tabela pública `usuarios` após o cadastro no Supabase Auth, ou definir claramente o endpoint `POST /api/v1/me/completar-cadastro`. Sem isso, o doador autenticado não terá automaticamente registro em `usuarios`.
+
+5. Implementar RLS (Row Level Security) no Supabase: doador acessa apenas os próprios dados, doações e notificações; funcionário acessa apenas dados do hemocentro vinculado em `hemocentro_usuarios`; estoque público pode ter leitura pública controlada; escrita em estoque, sensores, alertas e movimentações deve ser restrita a funcionários autorizados.
+
+6. Criar trigger/serviço para gerar alertas de `estoque_baixo` e `estoque_critico` quando `estoque_sangue.quantidade_bolsas` cruzar `nivel_minimo` ou `nivel_critico`. Hoje o script só gera alertas automáticos de temperatura e umidade.
+
+7. Definir deduplicação/resolução automática de alertas. Do jeito atual, cada leitura fora da faixa pode gerar um novo alerta repetido. Criar regra para não abrir alerta duplicado enquanto o anterior não for resolvido ou enquanto o sensor/estoque permanecer no mesmo estado.
+
+8. Alinhar a proposta de IoT com o banco: a documentação antiga fala em balança, o PDF mais recente fala em câmera de leitura de imagem. O banco atual implementa balança (`leituras_balanca`, `processar_leitura_balanca`). Para o PI, escolher uma abordagem principal e documentar. Recomendação: manter balança como implementação real e citar câmera como evolução futura.
+
+9. Definir e implementar a autenticação dos dispositivos IoT. O endpoint de leitura não pode ficar aberto. Usar header `x-iot-key` em uma primeira versão e, como evolução, token por sensor/device_id. Validar `device_id`, status do sensor e tipo do sensor antes de gravar leituras.
+
+10. Criar a tabela `campanhas` ou remover a referência genérica a campanha em `notificacoes.referencia_id`. Se campanhas forem funcionalidade do PI, modelar: id, hemocentro_id, titulo, mensagem, tipo_sanguineo_alvo, canal, status, created_at, enviada_em.
+
+11. Implementar a lógica de envio de notificações: `notificacoes` armazena registros, mas não há mecanismo que efetivamente envie SMS, push ou e-mail. Para o PI, pode ser um serviço mockado/simulado, mas deve existir um endpoint ou job que marque `enviada = true` e registre o canal.
+
+12. Definir a modelagem de conquistas/badges. A proposta fala em distintivo a cada número de doações e o banco tem `pontos`, mas não há tabela de conquistas. Criar `conquistas` e `usuario_conquistas`, ou remover a promessa do escopo.
+
+13. Padronizar o fluxo de doação: agendamento, recepção, entrevista, doação realizada, registro em `doacoes`, movimentação de entrada no estoque, certificado digital e atualização de `total_doacoes`/`pontos`. Definir endpoints e transações para esse fluxo.
+
+14. Revisar a função `processar_leitura_balanca`: ela grava `leituras_balanca`, calcula delta, cria movimentação e atualiza `ultima_comunicacao`, mas não atualiza `leituras_balanca.bolsas_estimadas`. Também deve tratar erros de peso inválido/negativo e possíveis leituras duplicadas.
+
+15. Revisar as funções estatísticas para garantir que usam `doacoes.status = 'realizada'`, datas coerentes e tipos corretos. A função `previsao_demanda_sazonal` depende de dados históricos; documentar que, com pouco histórico, o resultado pode ser frágil. Para o PI, incluir dados simulados de pelo menos 52 semanas.
+
+16. Não depender de TimescaleDB no Supabase sem confirmar disponibilidade. O script atual usa PostgreSQL puro. Para o PI, manter PostgreSQL/Supabase com índices e, se quiser, citar TimescaleDB apenas como alternativa arquitetural.
+
+17. Criar índices e constraints adicionais: `usuarios.cpf` único, `hemocentros.cnpj` único, `sensores.device_id` único, índices por `hemocentro_id`, `tipo_sanguineo`, `created_at`, `usuario_id`, `resolvido` e `enviada`. Revisar checks de tipo sanguíneo repetidos.
+
+18. Garantir que a extensão `pgcrypto` esteja habilitada caso `gen_random_uuid()` não esteja disponível nativamente no projeto Supabase.
+
+19. Padronizar nomes e documentação: `usuarios` representa doadores, `hemocentro_usuarios` representa funcionários, `sensores` representa dispositivos IoT. Documentar isso no README e no OpenAPI para evitar confusão.
+
+20. Documentar a API no padrão OpenAPI, com todos os endpoints, schemas de request/response, códigos de erro, autenticação JWT e autenticação IoT. O manual do 4º semestre exige API RESTful documentada em OpenAPI.
+
+21. Definir CORS, Helmet, validação com Zod, tratamento centralizado de erros, variáveis de ambiente e logs. Não expor `SUPABASE_SERVICE_ROLE_KEY` no front-end ou no mobile.
+
+22. Separar claramente os acessos: front-end web e mobile usam JWT do Supabase e a API; somente o backend usa a service role key para operações administrativas e RPCs sensíveis.
+
+23. Criar endpoint de saúde (`/health`) e endpoints públicos mínimos para consulta de hemocentros e estoque, sem exigir login.
+
+24. Criar dados de seed para demonstração: hemocentro, funcionário, doadores, tipos sanguíneos, sensores, leituras de ambiente, leituras de balança, doações históricas e alertas. Isso é essencial para o dashboard, os relatórios estatísticos e o vídeo de demonstração do PI.
+
+25. Revisar a proposta escrita para alinhar promessas e escopo real do backend: notificação SMS, certificado digital, badges, câmera IoT e previsão SARIMA só devem aparecer se forem implementados ou claramente marcados como simulação/evolução.
+
+PLANEJAMENTO BÁSICO DO BACKEND
+
+Objetivo: construir uma API RESTful em Node.js + TypeScript + Express, integrada ao Supabase/PostgreSQL, responsável por autenticação de doadores e funcionários, cadastro de hemocentros, controle de estoque de sangue, ingestão de dados IoT, geração de alertas, notificações, histórico de doações e relatórios estatísticos para o dashboard web e o aplicativo mobile.
+
+Arquitetura: front-end React e mobile React Native consomem a API. A API valida JWT do Supabase, aplica regras de autorização por perfil e acessa o PostgreSQL/Supabase. O ESP32 envia leituras de ambiente e balança para endpoints IoT autenticados por chave. O backend grava leituras, chama funções RPC do banco para processar balança, previsão, média de doações, estudo de doadores e CEP. As funções SQL existentes serão reaproveitadas, mas corrigidas e documentadas.
+
+Módulos previstos: autenticação/perfil do doador; hemocentros e estoque; sensores e IoT; alertas; notificações e campanhas; doações e histórico; relatórios estatísticos; dashboard; administração de funcionários. Cada módulo terá rotas, schemas de validação, controllers/services e documentação OpenAPI.
+
+Segurança: JWT do Supabase para usuários; service role key apenas no backend; RLS no banco; header `x-iot-key` para dispositivos; validação de payload com Zod; Helmet e CORS; variáveis de ambiente; separação entre rotas públicas, rotas de doador, rotas de funcionário e rotas IoT.
+
+Banco: corrigir o script com `doacoes`, `update_updated_at`, triggers de estoque, RLS, tabela de campanhas/conquistas se necessário, seeds e índices. Manter PostgreSQL/Supabase como base principal. Usar as RPCs `processar_leitura_balanca`, `previsao_demanda_sazonal`, `relatorio_media_doacoes`, `relatorio_estudo_doador` e `relatorio_cep` como camada de cálculo estatístico.
+
+Entregas por etapa: primeira etapa, correção do banco e API base com health check, auth e `/me`; segunda, hemocentros, estoque e sensores; terceira, IoT ambiente e balança; quarta, alertas e notificações; quinta, doações e histórico; sexta, relatórios estatísticos e dashboard; sétima, OpenAPI completo, integração com React/mobile, seeds, testes e vídeo de demonstração.
+
+Critérios de aceite do 4º semestre: API RESTful funcional, documentada em OpenAPI, integrada ao banco relacional, recebendo dados IoT simulados ou reais, fornecendo dados para dashboard web e mobile, com funções estatísticas expostas e versionamento no GitHub com commits de todos os integrantes.
