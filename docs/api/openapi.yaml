@@ -1,0 +1,768 @@
+openapi: 3.0.3
+info:
+  title: Nosso Sangue API
+  version: 1.0.0
+  description: |
+    API RESTful para integração entre hemocentros, doadores e sensores IoT.
+    Autenticação de usuários via JWT do Supabase.
+    Ingestão IoT via x-iot-key.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desenvolvimento local
+  - url: https://api-nosso-sangue.example.com/api/v1
+    description: Integração e demo
+
+tags:
+  - name: Health
+  - name: Me
+  - name: Publico
+  - name: Estoque
+  - name: Sensores
+  - name: IoT
+  - name: Alertas
+  - name: Campanhas
+  - name: Notificacoes
+  - name: Relatorios
+  - name: Dashboard
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    IotKey:
+      type: apiKey
+      in: header
+      name: x-iot-key
+
+  responses:
+    Erro:
+      description: Erro padronizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+
+  schemas:
+    Erro:
+      type: object
+      required: [erro]
+      properties:
+        erro:
+          type: object
+          required: [codigo, mensagem]
+          properties:
+            codigo:
+              type: string
+              enum:
+                - VALIDACAO
+                - NAO_AUTENTICADO
+                - NAO_AUTORIZADO
+                - NAO_ENCONTRADO
+                - CONFLITO
+                - INTERNO
+            mensagem:
+              type: string
+            detalhes:
+              type: object
+              additionalProperties: true
+
+    Hemocentro:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        cidade:
+          type: string
+        estado:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        telefone:
+          type: string
+        email:
+          type: string
+
+    EstoqueItem:
+      type: object
+      properties:
+        tipo_sanguineo:
+          type: string
+          enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        quantidade_bolsas:
+          type: integer
+        nivel_minimo:
+          type: integer
+        nivel_critico:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        tipo:
+          type: string
+          enum: [balanca, ambiente, camera, combinado]
+        device_id:
+          type: string
+        status:
+          type: string
+          enum: [ativo, inativo, manutencao]
+        ultima_comunicacao:
+          type: string
+          format: date-time
+          nullable: true
+
+    LeituraAmbienteReq:
+      type: object
+      required: [device_id, temperatura, umidade]
+      properties:
+        device_id:
+          type: string
+        temperatura:
+          type: number
+        umidade:
+          type: number
+
+    LeituraBalancaReq:
+      type: object
+      required: [device_id, peso_kg]
+      properties:
+        device_id:
+          type: string
+        peso_kg:
+          type: number
+          minimum: 0
+
+    Alerta:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+        severidade:
+          type: string
+          enum: [info, aviso, critico]
+        mensagem:
+          type: string
+        resolvido:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    Notificacao:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+        titulo:
+          type: string
+        mensagem:
+          type: string
+        canal:
+          type: string
+          enum: [app, sms, email, push]
+        lida:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Verificação de saúde da API
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  versao:
+                    type: string
+
+  /me:
+    get:
+      tags: [Me]
+      summary: Dados do usuário autenticado
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Perfil
+        '401':
+          $ref: '#/components/responses/Erro'
+    patch:
+      tags: [Me]
+      summary: Atualiza perfil
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome_completo:
+                  type: string
+                telefone:
+                  type: string
+                tipo_sanguineo:
+                  type: string
+                aceita_notificacoes_sms:
+                  type: boolean
+      responses:
+        '200':
+          description: Perfil atualizado
+        '400':
+          $ref: '#/components/responses/Erro'
+
+  /me/elegibilidade:
+    post:
+      tags: [Me]
+      summary: Avalia elegibilidade com base no questionário
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Resultado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apto:
+                    type: boolean
+                  motivos:
+                    type: array
+                    items:
+                      type: string
+
+  /me/doacoes:
+    get:
+      tags: [Me]
+      summary: Histórico de doações do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista
+
+  /me/notificacoes:
+    get:
+      tags: [Me]
+      summary: Notificações do usuário
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista
+
+  /me/notificacoes/{id}/lida:
+    patch:
+      tags: [Me]
+      summary: Marca notificação como lida
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: OK
+
+  /publico/hemocentros:
+    get:
+      tags: [Publico]
+      summary: Lista hemocentros por cidade
+      security: []
+      parameters:
+        - name: cidade
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hemocentro'
+
+  /publico/hemocentros/{id}/estoque:
+    get:
+      tags: [Publico]
+      summary: Estoque público por tipo sanguíneo
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estoque
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstoqueItem'
+
+  /hemocentros/{id}/estoque:
+    get:
+      tags: [Estoque]
+      summary: Estoque completo (funcionário)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estoque
+        '403':
+          $ref: '#/components/responses/Erro'
+
+  /hemocentros/{id}/movimentacoes:
+    get:
+      tags: [Estoque]
+      summary: Histórico de movimentações
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista
+    post:
+      tags: [Estoque]
+      summary: Ajuste manual de estoque
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo_sanguineo, tipo_movimentacao, quantidade, origem]
+              properties:
+                tipo_sanguineo:
+                  type: string
+                tipo_movimentacao:
+                  type: string
+                  enum: [entrada, saida]
+                origem:
+                  type: string
+                  enum: [doacao, transfusao, descarte, ajuste_manual, iot_balanca]
+                quantidade:
+                  type: integer
+                  minimum: 1
+                observacao:
+                  type: string
+      responses:
+        '201':
+          description: Movimentação criada
+
+  /hemocentros/{id}/sensores:
+    get:
+      tags: [Sensores]
+      summary: Lista sensores do hemocentro
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sensor'
+    post:
+      tags: [Sensores]
+      summary: Cadastra sensor
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, tipo, device_id]
+              properties:
+                nome:
+                  type: string
+                tipo:
+                  type: string
+                  enum: [balanca, ambiente, camera, combinado]
+                device_id:
+                  type: string
+                localizacao:
+                  type: string
+                tipo_sanguineo_monitorado:
+                  type: string
+      responses:
+        '201':
+          description: Sensor criado
+
+  /sensores/{id}:
+    patch:
+      tags: [Sensores]
+      summary: Atualiza sensor
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+
+  /iot/ambiente:
+    post:
+      tags: [IoT]
+      summary: Recebe leitura de temperatura e umidade
+      security:
+        - IotKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeituraAmbienteReq'
+      responses:
+        '201':
+          description: Leitura registrada
+        '400':
+          $ref: '#/components/responses/Erro'
+        '401':
+          $ref: '#/components/responses/Erro'
+        '404':
+          $ref: '#/components/responses/Erro'
+
+  /iot/balanca:
+    post:
+      tags: [IoT]
+      summary: Recebe leitura de balança e processa movimentação
+      security:
+        - IotKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeituraBalancaReq'
+      responses:
+        '201':
+          description: Leitura processada
+
+  /hemocentros/{id}/alertas:
+    get:
+      tags: [Alertas]
+      summary: Lista alertas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: resolvido
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alerta'
+
+  /alertas/{id}/resolver:
+    patch:
+      tags: [Alertas]
+      summary: Marca alerta como resolvido
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: OK
+
+  /hemocentros/{id}/campanhas:
+    post:
+      tags: [Campanhas]
+      summary: Cria campanha e notifica doadores do tipo em baixa
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo_sanguineo, titulo, mensagem]
+              properties:
+                tipo_sanguineo:
+                  type: string
+                titulo:
+                  type: string
+                mensagem:
+                  type: string
+                canal:
+                  type: string
+                  enum: [app, sms, email, push]
+      responses:
+        '201':
+          description: Campanha criada
+
+  /hemocentros/{id}/notificacoes:
+    get:
+      tags: [Notificacoes]
+      summary: Lista notificações enviadas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista
+
+  /hemocentros/{id}/relatorios/previsao:
+    get:
+      tags: [Relatorios]
+      summary: Previsão de demanda por tipo sanguíneo (RPC previsao_demanda_sazonal)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tipo_sanguineo
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: semanas
+          in: query
+          schema:
+            type: integer
+            default: 52
+      responses:
+        '200':
+          description: Série de previsão
+
+  /hemocentros/{id}/relatorios/media-doacoes:
+    get:
+      tags: [Relatorios]
+      summary: Média de doações e distribuição (RPC relatorio_media_doacoes)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: inicio
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: fim
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Resumo e distribuição
+
+  /hemocentros/{id}/relatorios/estudo-doadores:
+    get:
+      tags: [Relatorios]
+      summary: Estudo de doadores (RPC relatorio_estudo_doador)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: inicio
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: fim
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: KPIs e faixas etárias
+
+  /hemocentros/{id}/relatorios/cep:
+    get:
+      tags: [Relatorios]
+      summary: Controle estatístico de processo (RPC relatorio_cep)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sensor_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: inicio
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: fim
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Pontos com LCS, LCI e status
+
+  /hemocentros/{id}/dashboard/resumo:
+    get:
+      tags: [Dashboard]
+      summary: Resumo agregado para o dashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: KPIs e séries
