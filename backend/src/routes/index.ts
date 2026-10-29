@@ -4,6 +4,7 @@ import iotRoutes from './iot.routes';
 import sensoresRoutes from './sensores.routes';
 import doadoresRoutes from './doadores.routes';
 import doacoesRoutes from './doacoes.routes';
+import meRoutes from './me.routes';
 
 const router = Router();
 
@@ -12,9 +13,6 @@ router.use('/iot', iotRoutes);
 router.use('/hemocentros', sensoresRoutes);
 router.use('/hemocentros', doadoresRoutes);
 router.use('/hemocentros', doacoesRoutes);
-
-// Próximos:
-// router.use('/me', meRoutes);
-// router.use('/publico', publicoRoutes);
+router.use('/me', meRoutes);
 
 export default router;
