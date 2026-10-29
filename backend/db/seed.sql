@@ -15,11 +15,18 @@ insert into estoque_sangue (hemocentro_id, tipo_sanguineo, quantidade_bolsas, ni
   ('11111111-1111-1111-1111-111111111111', 'O+', 30, 10, 5),
   ('11111111-1111-1111-1111-111111111111', 'O-', 3, 10, 5);
 
--- Sensores de teste
-insert into sensores (hemocentro_id, nome, tipo, device_id, localizacao, status) values
-  ('11111111-1111-1111-1111-111111111111',
+-- Sensores de teste com UUIDs fixos (facilita testes sem consultar Studio)
+insert into sensores (id, hemocentro_id, nome, tipo, device_id, localizacao, status) values
+  ('33333333-3333-3333-3333-333333333301',
+   '11111111-1111-1111-1111-111111111111',
    'DHT22 Câmara Fria 1', 'ambiente', 'ESP32-DHT22-001', 'Câmara Fria 1', 'ativo');
 
-insert into sensores (hemocentro_id, nome, tipo, device_id, localizacao, tipo_sanguineo_monitorado, status) values
-  ('11111111-1111-1111-1111-111111111111',
+insert into sensores (id, hemocentro_id, nome, tipo, device_id, localizacao, tipo_sanguineo_monitorado, status) values
+  ('33333333-3333-3333-3333-333333333302',
+   '11111111-1111-1111-1111-111111111111',
    'Balança O+', 'balanca', 'ESP32-BALANCA-O+', 'Prateleira O+', 'O+', 'ativo');
+
+-- NOTA: usuário funcionário de teste é criado via Admin API do Supabase,
+-- não aqui, para evitar inconsistências no schema auth.users.
+-- Ver: docs/dev/funcionario-teste.md
+

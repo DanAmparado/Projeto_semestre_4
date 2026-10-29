@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nosso Sangue API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     API RESTful para integração entre hemocentros, doadores e sensores IoT.
 
