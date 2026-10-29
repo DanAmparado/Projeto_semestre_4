@@ -8,6 +8,11 @@
 
 Este guia lista o que precisa ser alterado no front web (`frontend/P-i Web`) e no mobile (`frontend/p-i mobile ofc`) para integrar com o backend do projeto. A ordem segue a prioridade de execução. Itens marcados **[BLOQUEANTE]** impedem qualquer integração.
 
+> **Atualização (2026-10-29):** Todos os endpoints do backend estão implementados e testados.
+> O `openapi.yaml` (v1.8.0) está em sincronia com o código. A seção "6. Endpoints que serão
+> criados" está **obsoleta** — os 4 endpoints listados lá já existem. Use o `openapi.yaml`
+> como fonte de verdade.
+
 ---
 
 ## 0. Visão geral

@@ -78,3 +78,25 @@ apenas em `127.0.0.1`), mas o GitHub bloqueia o push de qualquer coisa
 parecida com chave (`sb_secret_*`, `sb_publishable_*`, `sk_*`, etc.).
 Sempre use placeholders em arquivos versionados. Os valores reais ficam
 apenas no `.env` local, que está no `.gitignore`.
+
+## Criar doador de teste
+
+O processo é o mesmo, só muda o payload e a vinculação (doador não precisa de `hemocentro_usuarios`, só de `usuarios`).
+
+### 1. Criar no Auth
+
+```bash
+curl -X POST "http://127.0.0.1:54321/auth/v1/admin/users" \
+  -H "Content-Type: application/json" \
+  -H "apikey: $SUPABASE_SECRET_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SECRET_KEY" \
+  -d '{
+    "email": "doador@test.local",
+    "password": "senha123",
+    "email_confirm": true,
+    "user_metadata": {
+      "nome_completo": "Doador Teste",
+      "cpf": "11111111111",
+      "data_nascimento": "1995-01-01"
+    }
+  }'
