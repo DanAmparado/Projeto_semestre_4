@@ -16,7 +16,8 @@
     "db:push": "supabase db push",
     "types": "supabase gen types typescript --local > src/types/database.ts",
     "db:sync": "node scripts/sync-migrations.js",
-    "db:reset": "npm run db:sync && cd .. && supabase db reset"
+    "db:reset": "npm run db:sync && cd .. && supabase db reset",
+    "seed:historico": "node scripts/seed-historico.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
