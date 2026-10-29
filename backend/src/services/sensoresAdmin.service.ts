@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../lib/supabase';
-import { Forbidden, Internal, NotFound } from '../errors/httpErrors';
+import { Conflict, Forbidden, Internal, NotFound } from '../errors/httpErrors';
 import { AtualizarSensorBody, CriarSensorBody } from '../schemas/sensoresAdmin.schema';
 
 export async function listarSensores(hemocentroId: string) {
@@ -33,7 +33,7 @@ export async function criarSensor(hemocentroId: string, body: CriarSensorBody) {
 
   if (error) {
     if (error.code === '23505') {
-      throw Internal('device_id já cadastrado');
+      throw Conflict(`device_id "${body.device_id}" já está cadastrado`);
     }
     throw Internal(error.message);
   }

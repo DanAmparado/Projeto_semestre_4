@@ -1,8 +1,15 @@
 import { z } from 'zod';
 
 export const elegibilidadeBodySchema = z.object({
-  idade: z.number().int().min(16).max(100),
-  peso: z.number().min(30).max(300),
+  idade: z
+    .number()
+    .int()
+    .min(16, 'Idade mínima para doação é 16 anos')
+    .max(69, 'Idade máxima para doação é 69 anos'),
+  peso: z
+    .number()
+    .min(50, 'Peso mínimo para doação é 50 kg')
+    .max(300, 'Peso máximo aceito é 300 kg'),
   sexo: z.enum(['M', 'F', 'O']),
   ultima_doacao: z
     .string()

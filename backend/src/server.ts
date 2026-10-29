@@ -7,6 +7,8 @@ import routes from './routes';
 import { errorHandler, notFound } from './middlewares/error';
 
 const app = express();
+// Não anuncia que a app é Express (reduz fingerprinting)
+app.disable('x-powered-by');
 
 // Segurança e parsing
 app.use(helmet());

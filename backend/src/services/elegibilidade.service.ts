@@ -10,17 +10,9 @@ export async function avaliarElegibilidade(
 ): Promise<Resultado> {
   const motivos: string[] = [];
 
-  // 1. Idade
-  if (body.idade < 16 || body.idade > 69) {
-    motivos.push('Idade fora da faixa permitida (16 a 69 anos)');
-  }
+  // Idade e peso já são validados pelo Zod (16-69 anos, 50-300 kg).
+  // Aqui só ficam as regras de saúde e intervalo entre doações.
 
-  // 2. Peso
-  if (body.peso < 50) {
-    motivos.push('Peso mínimo para doação é 50 kg');
-  }
-
-  // 3. Condições de saúde
   if (body.gripado_febre) motivos.push('Não é possível doar com gripe ou febre');
   if (body.hepatite_hiv) motivos.push('Portador de hepatite B/C ou HIV não pode doar');
   if (body.tatuagem_ultimos_12_meses) {
@@ -35,7 +27,7 @@ export async function avaliarElegibilidade(
     motivos.push('Gestantes e lactantes não podem doar');
   }
 
-  // 4. Intervalo desde a última doação (pega a data do banco, ou a do body)
+  // Intervalo desde a última doação (data do banco ou a do body)
   let ultimaDoacao = body.ultima_doacao ?? null;
 
   if (!ultimaDoacao) {
