@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relatórios | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <form class="painel-filtro filtro" id="form-relatorio">
+      <div class="campo"><label for="tipo">Tipo de relatório</label>
+        <select id="tipo" required>
+          <option value="">Selecione</option>
+          <option value="previsao">Previsão de demanda</option>
+          <option value="media-doacoes">Média de doações</option>
+          <option value="cep">Controle estatístico de processo (CEP)</option>
+          <option value="estudo-doadores">Estudo de doador</option>
+        </select></div>
+      <div class="campo" data-campo="tipo-sang" hidden><label for="tipo-sang">Tipo sanguíneo</label><select id="tipo-sang"><option value="">Selecione</option></select></div>
+      <div class="campo" data-campo="semanas" hidden><label for="semanas">Semanas de histórico</label><input id="semanas" type="number" min="4" max="104" value="52"></div>
+      <div class="campo" data-campo="sensor" hidden><label for="sensor">Sensor</label><select id="sensor"><option value="">Selecione</option></select></div>
+      <div class="campo" data-campo="datas" hidden><label for="ini">Data inicial</label><input id="ini" type="date"></div>
+      <div class="campo" data-campo="datas" hidden><label for="fim">Data final</label><input id="fim" type="date"></div>
+      <button class="btn" type="submit">Gerar</button>
+    </form>
+    <section class="resultado" id="resultado" aria-live="polite">
+      <p class="resultado__vazio">Escolha o tipo de relatório para gerar</p>
+    </section>
+  </main>
+  <script type="module" src="../js/relatorios.js"></script>
+</body>
+</html>
