@@ -2,6 +2,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { auth } from '../middlewares/auth';
 import { validateBody, validateParams } from '../middlewares/validate';
 import { atualizarPerfilBodySchema, notificacaoIdParamSchema } from '../schemas/me.schema';
+import { elegibilidadeBodySchema } from '../schemas/elegibilidade.schema';
 import {
   atualizarPerfil,
   getPerfil,
@@ -9,6 +10,7 @@ import {
   listarNotificacoes,
   marcarNotificacaoLida,
 } from '../services/me.service';
+import { avaliarElegibilidade } from '../services/elegibilidade.service';
 
 const router = Router();
 
@@ -31,6 +33,19 @@ router.patch(
       await atualizarPerfil(req.user!.id, req.body);
       const perfil = await getPerfil(req.user!.id, req.user!.email);
       res.json(perfil);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/elegibilidade',
+  validateBody(elegibilidadeBodySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const resultado = await avaliarElegibilidade(req.user!.id, req.body);
+      res.json(resultado);
     } catch (err) {
       next(err);
     }
