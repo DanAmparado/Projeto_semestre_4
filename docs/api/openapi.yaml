@@ -1,19 +1,14 @@
 openapi: 3.0.3
 info:
   title: Nosso Sangue API
-  version: 1.6.0
+  version: 1.8.0
   description: |
     API RESTful para integração entre hemocentros, doadores e sensores IoT.
 
     **Autenticação de usuários**: JWT do Supabase no header `Authorization: Bearer <token>`.
     **Ingestão IoT**: header `x-iot-key`.
 
-    Endpoints marcados com `x-status: pendente` estão definidos no contrato mas ainda
-    não implementados no backend. Consumir com mock até liberação.
-
-    **Legenda de status:**
-    - Sem `x-status` → implementado e testado
-    - `x-status: pendente` → contrato definido, implementação pendente
+    Todos os endpoints abaixo estão implementados e testados.
 
 servers:
   - url: http://localhost:3000/api/v1
@@ -154,6 +149,10 @@ components:
         nome: { type: string }
         tipo: { type: string, enum: [balanca, ambiente, camera, combinado] }
         device_id: { type: string }
+        localizacao: { type: string, nullable: true }
+        tipo_sanguineo_monitorado: { $ref: '#/components/schemas/TipoSanguineo' }
+        modelo: { type: string, nullable: true }
+        versao_firmware: { type: string, nullable: true }
         status: { type: string, enum: [ativo, inativo, manutencao] }
         ultima_comunicacao: { type: string, format: date-time, nullable: true }
 
@@ -298,7 +297,6 @@ paths:
     post:
       tags: [Me]
       summary: Avalia elegibilidade com base no questionário
-      x-status: pendente
       security:
         - BearerAuth: []
       requestBody:
@@ -307,7 +305,19 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              required: [idade, peso, sexo, gripado_febre, tatuagem_ultimos_12_meses, hepatite_hiv]
+              properties:
+                idade: { type: integer, minimum: 16, maximum: 100 }
+                peso: { type: number, minimum: 30, maximum: 300 }
+                sexo: { type: string, enum: [M, F, O] }
+                ultima_doacao: { type: string, format: date, nullable: true }
+                gripado_febre: { type: boolean }
+                tatuagem_ultimos_12_meses: { type: boolean }
+                hepatite_hiv: { type: boolean }
+                gravida_amamentando: { type: boolean, default: false }
+                alcool_ultimas_12h: { type: boolean, default: false }
+                drogas_ilicitas: { type: boolean, default: false }
+                cirurgia_ultimos_6_meses: { type: boolean, default: false }
       responses:
         '200':
           description: Resultado
@@ -469,7 +479,6 @@ paths:
     get:
       tags: [Estoque]
       summary: Histórico de movimentações
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -477,6 +486,21 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+        - name: tipo_sanguineo
+          in: query
+          schema: { $ref: '#/components/schemas/TipoSanguineo' }
+        - name: origem
+          in: query
+          schema: { type: string, enum: [doacao, transfusao, descarte, ajuste_manual, iot_balanca] }
+        - name: inicio
+          in: query
+          schema: { type: string, format: date }
+        - name: fim
+          in: query
+          schema: { type: string, format: date }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
       responses:
         '200':
           description: Lista
@@ -583,7 +607,6 @@ paths:
     get:
       tags: [Sensores]
       summary: Lista sensores do hemocentro
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -606,7 +629,6 @@ paths:
     post:
       tags: [Sensores]
       summary: Cadastra sensor
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -627,6 +649,8 @@ paths:
                 device_id: { type: string }
                 localizacao: { type: string }
                 tipo_sanguineo_monitorado: { $ref: '#/components/schemas/TipoSanguineo' }
+                modelo: { type: string }
+                versao_firmware: { type: string }
       responses:
         '201':
           description: Sensor criado
@@ -676,7 +700,6 @@ paths:
     patch:
       tags: [Sensores]
       summary: Atualiza sensor
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -684,13 +707,29 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome: { type: string }
+                localizacao: { type: string }
+                status: { type: string, enum: [ativo, inativo, manutencao] }
+                modelo: { type: string }
+                versao_firmware: { type: string }
       responses:
-        '200':
+        '204':
           description: OK
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
         '401':
           $ref: '#/components/responses/ErroNaoAutenticado'
         '403':
           $ref: '#/components/responses/ErroNaoAutorizado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /iot/ambiente:
     post:
@@ -786,7 +825,6 @@ paths:
     post:
       tags: [Campanhas]
       summary: Cria campanha e notifica doadores do tipo em baixa
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -805,7 +843,7 @@ paths:
                 tipo_sanguineo: { $ref: '#/components/schemas/TipoSanguineo' }
                 titulo: { type: string }
                 mensagem: { type: string }
-                canal: { type: string, enum: [app, sms, email, push] }
+                canal: { type: string, enum: [app, sms, email, push], default: app }
       responses:
         '201':
           description: Campanha criada
@@ -820,7 +858,6 @@ paths:
     get:
       tags: [Notificacoes]
       summary: Lista notificações enviadas pelo hemocentro
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
@@ -828,6 +865,9 @@ paths:
           in: path
           required: true
           schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
       responses:
         '200':
           description: Lista
@@ -967,7 +1007,6 @@ paths:
     get:
       tags: [Dashboard]
       summary: Resumo agregado para o dashboard
-      x-status: pendente
       security:
         - BearerAuth: []
       parameters:
