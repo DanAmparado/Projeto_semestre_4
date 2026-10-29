@@ -6,6 +6,8 @@ import doadoresRoutes from './doadores.routes';
 import doacoesRoutes from './doacoes.routes';
 import meRoutes from './me.routes';
 import publicoRoutes from './publico.routes';
+import relatoriosRoutes from './relatorios.routes';
+import estoqueRoutes, { alertasRouter } from './estoque.routes';
 
 const router = Router();
 
@@ -14,6 +16,9 @@ router.use('/iot', iotRoutes);
 router.use('/hemocentros', sensoresRoutes);
 router.use('/hemocentros', doadoresRoutes);
 router.use('/hemocentros', doacoesRoutes);
+router.use('/hemocentros', relatoriosRoutes);
+router.use('/hemocentros', estoqueRoutes);
+router.use('/alertas', alertasRouter);
 router.use('/me', meRoutes);
 router.use('/publico', publicoRoutes);
 
