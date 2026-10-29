@@ -90,3 +90,34 @@ export async function criarMovimentacao(
   if (error) throw Internal(error.message);
   return data;
 }
+
+type FiltrosMovimentacoes = {
+  tipo_sanguineo?: string;
+  origem?: string;
+  inicio?: string;
+  fim?: string;
+  limit: number;
+};
+
+export async function listarMovimentacoes(
+  hemocentroId: string,
+  filtros: FiltrosMovimentacoes
+) {
+  let query = supabaseAdmin
+    .from('movimentacoes_estoque')
+    .select(
+      'id, tipo_sanguineo, tipo_movimentacao, origem, quantidade, observacao, doacao_id, sensor_id, created_at'
+    )
+    .eq('hemocentro_id', hemocentroId)
+    .order('created_at', { ascending: false })
+    .limit(filtros.limit);
+
+  if (filtros.tipo_sanguineo) query = query.eq('tipo_sanguineo', filtros.tipo_sanguineo);
+  if (filtros.origem) query = query.eq('origem', filtros.origem);
+  if (filtros.inicio) query = query.gte('created_at', filtros.inicio);
+  if (filtros.fim) query = query.lte('created_at', `${filtros.fim}T23:59:59.999Z`);
+
+  const { data, error } = await query;
+  if (error) throw Internal(error.message);
+  return data ?? [];
+}

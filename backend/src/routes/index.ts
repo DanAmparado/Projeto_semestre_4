@@ -8,6 +8,7 @@ import meRoutes from './me.routes';
 import publicoRoutes from './publico.routes';
 import relatoriosRoutes from './relatorios.routes';
 import estoqueRoutes, { alertasRouter } from './estoque.routes';
+import campanhasRoutes from './campanhas.routes';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use('/hemocentros', doadoresRoutes);
 router.use('/hemocentros', doacoesRoutes);
 router.use('/hemocentros', relatoriosRoutes);
 router.use('/hemocentros', estoqueRoutes);
+router.use('/hemocentros', campanhasRoutes);
 router.use('/alertas', alertasRouter);
 router.use('/me', meRoutes);
 router.use('/publico', publicoRoutes);

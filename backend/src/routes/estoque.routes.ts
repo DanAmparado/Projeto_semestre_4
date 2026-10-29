@@ -7,11 +7,13 @@ import {
   criarMovimentacaoBodySchema,
   hemocentroIdParamSchema,
   listarAlertasQuerySchema,
+  listarMovimentacoesQuerySchema,
 } from '../schemas/estoque.schema';
 import {
   criarMovimentacao,
   getEstoqueInterno,
   listarAlertas,
+  listarMovimentacoes,
   resolverAlerta,
 } from '../services/estoque.service';
 
@@ -49,6 +51,23 @@ router.get(
   }
 );
 
+router.get(
+  '/:id/movimentacoes',
+  auth,
+  validateParams(hemocentroIdParamSchema),
+  autorizarFuncionario,
+  validateQuery(listarMovimentacoesQuerySchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filtros = (req as any).validatedQuery;
+      const movs = await listarMovimentacoes(req.params.id, filtros);
+      res.json(movs);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.post(
   '/:id/movimentacoes',
   auth,
@@ -67,7 +86,6 @@ router.post(
 
 export default router;
 
-// Rota separada para /alertas (não prefixada por /hemocentros)
 export const alertasRouter = Router();
 
 alertasRouter.patch(

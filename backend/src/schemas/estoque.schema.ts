@@ -22,3 +22,17 @@ export const criarMovimentacaoBodySchema = z.object({
   quantidade: z.number().int().min(1, 'Quantidade deve ser ≥ 1'),
   observacao: z.string().max(500).optional(),
 });
+
+export const listarMovimentacoesQuerySchema = z.object({
+  tipo_sanguineo: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
+  origem: z.enum(['doacao', 'transfusao', 'descarte', 'ajuste_manual', 'iot_balanca']).optional(),
+  inicio: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'inicio deve ser YYYY-MM-DD')
+    .optional(),
+  fim: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'fim deve ser YYYY-MM-DD')
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
