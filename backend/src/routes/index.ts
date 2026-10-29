@@ -5,6 +5,7 @@ import sensoresRoutes from './sensores.routes';
 import doadoresRoutes from './doadores.routes';
 import doacoesRoutes from './doacoes.routes';
 import meRoutes from './me.routes';
+import publicoRoutes from './publico.routes';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/hemocentros', sensoresRoutes);
 router.use('/hemocentros', doadoresRoutes);
 router.use('/hemocentros', doacoesRoutes);
 router.use('/me', meRoutes);
+router.use('/publico', publicoRoutes);
 
 export default router;
