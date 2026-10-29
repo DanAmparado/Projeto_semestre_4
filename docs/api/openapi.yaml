@@ -1,11 +1,15 @@
 openapi: 3.0.3
 info:
   title: Nosso Sangue API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     API RESTful para integração entre hemocentros, doadores e sensores IoT.
-    Autenticação de usuários via JWT do Supabase.
-    Ingestão IoT via x-iot-key.
+
+    **Autenticação de usuários**: JWT do Supabase no header `Authorization: Bearer <token>`.
+    **Ingestão IoT**: header `x-iot-key`.
+
+    Endpoints marcados com `x-status: pendente` estão definidos no contrato mas ainda não
+    implementados no backend. Consumir com mock até liberação.
 
 servers:
   - url: http://localhost:3000/api/v1
@@ -18,6 +22,8 @@ tags:
   - name: Me
   - name: Publico
   - name: Estoque
+  - name: Doadores
+  - name: Doacoes
   - name: Sensores
   - name: IoT
   - name: Alertas
@@ -40,6 +46,30 @@ components:
   responses:
     Erro:
       description: Erro padronizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+    ErroValidacao:
+      description: Erro de validação de payload/params/query
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+    ErroNaoAutenticado:
+      description: Token ausente ou inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+    ErroNaoAutorizado:
+      description: Usuário autenticado sem permissão para o recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+    ErroNaoEncontrado:
+      description: Recurso não encontrado
       content:
         application/json:
           schema:
@@ -69,6 +99,10 @@ components:
               type: object
               additionalProperties: true
 
+    TipoSanguineo:
+      type: string
+      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+
     Hemocentro:
       type: object
       properties:
@@ -90,12 +124,26 @@ components:
         email:
           type: string
 
+    HemocentroResumo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        cidade:
+          type: string
+        estado:
+          type: string
+        telefone:
+          type: string
+
     EstoqueItem:
       type: object
       properties:
         tipo_sanguineo:
-          type: string
-          enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+          $ref: '#/components/schemas/TipoSanguineo'
         quantidade_bolsas:
           type: integer
         nivel_minimo:
@@ -105,6 +153,28 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    EstoqueResumo:
+      type: object
+      properties:
+        tipo_sanguineo:
+          $ref: '#/components/schemas/TipoSanguineo'
+        quantidade_bolsas:
+          type: integer
+        nivel_minimo:
+          type: integer
+        nivel_critico:
+          type: integer
+
+    HemocentroComEstoque:
+      type: object
+      properties:
+        hemocentro:
+          $ref: '#/components/schemas/HemocentroResumo'
+        estoque:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstoqueResumo'
 
     Sensor:
       type: object
@@ -138,6 +208,24 @@ components:
         umidade:
           type: number
 
+    LeituraAmbiente:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+        temperatura:
+          type: number
+          nullable: true
+        umidade:
+          type: number
+          nullable: true
+        alerta:
+          type: boolean
+
     LeituraBalancaReq:
       type: object
       required: [device_id, peso_kg]
@@ -147,6 +235,55 @@ components:
         peso_kg:
           type: number
           minimum: 0
+
+    DoadorResumo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome_completo:
+          type: string
+        tipo_sanguineo:
+          $ref: '#/components/schemas/TipoSanguineo'
+        total_doacoes:
+          type: integer
+        ultima_doacao:
+          type: string
+          format: date
+          nullable: true
+
+    RegistrarDoacaoReq:
+      type: object
+      required: [usuario_id, tipo_sanguineo]
+      properties:
+        usuario_id:
+          type: string
+          format: uuid
+        tipo_sanguineo:
+          $ref: '#/components/schemas/TipoSanguineo'
+        peso:
+          type: number
+          minimum: 50
+          description: Peso em kg (mínimo 50 conforme Ministério da Saúde)
+        observacao:
+          type: string
+
+    RegistrarDoacaoRes:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        data_doacao:
+          type: string
+          format: date
+        proxima_doacao_permitida:
+          type: string
+          format: date
+        movimentacao_id:
+          type: string
+          format: uuid
 
     Alerta:
       type: object
@@ -217,10 +354,10 @@ paths:
         '200':
           description: Perfil
         '401':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroNaoAutenticado'
     patch:
       tags: [Me]
-      summary: Atualiza perfil
+      summary: Atualiza perfil do doador
       security:
         - BearerAuth: []
       requestBody:
@@ -232,17 +369,30 @@ paths:
               properties:
                 nome_completo:
                   type: string
+                cpf:
+                  type: string
+                  description: Somente dígitos
+                data_nascimento:
+                  type: string
+                  format: date
+                sexo:
+                  type: string
+                  enum: [M, F, O]
+                tipo_sanguineo:
+                  $ref: '#/components/schemas/TipoSanguineo'
                 telefone:
                   type: string
-                tipo_sanguineo:
-                  type: string
+                peso:
+                  type: number
                 aceita_notificacoes_sms:
                   type: boolean
       responses:
         '200':
           description: Perfil atualizado
         '400':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
 
   /me/elegibilidade:
     post:
@@ -275,12 +425,33 @@ paths:
   /me/doacoes:
     get:
       tags: [Me]
-      summary: Histórico de doações do usuário
+      summary: Histórico de doações do usuário autenticado
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: Lista
+          description: Lista de doações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    tipo_sanguineo:
+                      $ref: '#/components/schemas/TipoSanguineo'
+                    data_doacao:
+                      type: string
+                      format: date
+                    status:
+                      type: string
+                      enum: [agendada, realizada, cancelada, inapta]
+                    hemocentro_id:
+                      type: string
+                      format: uuid
 
   /me/notificacoes:
     get:
@@ -291,6 +462,12 @@ paths:
       responses:
         '200':
           description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notificacao'
 
   /me/notificacoes/{id}/lida:
     patch:
@@ -308,14 +485,20 @@ paths:
       responses:
         '204':
           description: OK
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /publico/hemocentros:
     get:
       tags: [Publico]
-      summary: Lista hemocentros por cidade
+      summary: Lista hemocentros por cidade/estado
       security: []
       parameters:
         - name: cidade
+          in: query
+          schema:
+            type: string
+        - name: estado
           in: query
           schema:
             type: string
@@ -350,6 +533,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EstoqueItem'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
+
+  /publico/estoque:
+    get:
+      tags: [Publico]
+      summary: Hemocentros com estoque agregado (mobile)
+      description: |
+        Retorna hemocentros filtrados por cidade/estado, cada um com o estoque
+        de todos os tipos sanguíneos. Otimizado para a tela de consulta do app.
+      x-status: pendente
+      security: []
+      parameters:
+        - name: cidade
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: estado
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de hemocentros com estoque
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HemocentroComEstoque'
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
 
   /hemocentros/{id}/estoque:
     get:
@@ -367,8 +583,16 @@ paths:
       responses:
         '200':
           description: Estoque
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstoqueItem'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
         '403':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/movimentacoes:
     get:
@@ -386,6 +610,10 @@ paths:
       responses:
         '200':
           description: Lista
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
     post:
       tags: [Estoque]
       summary: Ajuste manual de estoque
@@ -407,7 +635,7 @@ paths:
               required: [tipo_sanguineo, tipo_movimentacao, quantidade, origem]
               properties:
                 tipo_sanguineo:
-                  type: string
+                  $ref: '#/components/schemas/TipoSanguineo'
                 tipo_movimentacao:
                   type: string
                   enum: [entrada, saida]
@@ -422,6 +650,94 @@ paths:
       responses:
         '201':
           description: Movimentação criada
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+
+  /hemocentros/{id}/doadores:
+    get:
+      tags: [Doadores]
+      summary: Busca doador por CPF (funcionário na recepção)
+      description: |
+        Busca um doador pelo CPF, restrito ao contexto de funcionamento do hemocentro.
+        Se não encontrado, retorna 404.
+      x-status: pendente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do hemocentro do funcionário logado
+          schema:
+            type: string
+            format: uuid
+        - name: cpf
+          in: query
+          required: true
+          description: CPF somente com dígitos
+          schema:
+            type: string
+            minLength: 11
+            maxLength: 11
+      responses:
+        '200':
+          description: Doador encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoadorResumo'
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
+
+  /hemocentros/{id}/doacoes:
+    post:
+      tags: [Doacoes]
+      summary: Registra doação realizada (funcionário)
+      description: |
+        Registra uma doação completa: insere em `doacoes`, cria movimentação de entrada
+        no estoque (origem `doacao`), atualiza `total_doacoes`/`pontos` do doador e
+        gera notificação `pode_doar` com a data da próxima doação permitida.
+      x-status: pendente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarDoacaoReq'
+      responses:
+        '201':
+          description: Doação registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrarDoacaoRes'
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /hemocentros/{id}/sensores:
     get:
@@ -445,6 +761,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Sensor'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
     post:
       tags: [Sensores]
       summary: Cadastra sensor
@@ -475,10 +795,64 @@ paths:
                 localizacao:
                   type: string
                 tipo_sanguineo_monitorado:
-                  type: string
+                  $ref: '#/components/schemas/TipoSanguineo'
       responses:
         '201':
           description: Sensor criado
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+
+  /hemocentros/{id}/sensores/{sensorId}/leituras:
+    get:
+      tags: [Sensores]
+      summary: Leituras recentes de um sensor de ambiente
+      description: |
+        Retorna as últimas leituras de temperatura/umidade de um sensor de ambiente.
+        Usado pela tela "Câmara Fria" do dashboard.
+      x-status: pendente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sensorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+      responses:
+        '200':
+          description: Lista de leituras (mais recente primeiro)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeituraAmbiente'
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /sensores/{id}:
     patch:
@@ -496,6 +870,10 @@ paths:
       responses:
         '200':
           description: OK
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /iot/ambiente:
     post:
@@ -513,11 +891,11 @@ paths:
         '201':
           description: Leitura registrada
         '400':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroValidacao'
         '401':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroNaoAutenticado'
         '404':
-          $ref: '#/components/responses/Erro'
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /iot/balanca:
     post:
@@ -534,6 +912,12 @@ paths:
       responses:
         '201':
           description: Leitura processada
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /hemocentros/{id}/alertas:
     get:
@@ -561,6 +945,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Alerta'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /alertas/{id}/resolver:
     patch:
@@ -578,6 +966,12 @@ paths:
       responses:
         '204':
           description: OK
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+        '404':
+          $ref: '#/components/responses/ErroNaoEncontrado'
 
   /hemocentros/{id}/campanhas:
     post:
@@ -601,7 +995,7 @@ paths:
               required: [tipo_sanguineo, titulo, mensagem]
               properties:
                 tipo_sanguineo:
-                  type: string
+                  $ref: '#/components/schemas/TipoSanguineo'
                 titulo:
                   type: string
                 mensagem:
@@ -612,11 +1006,17 @@ paths:
       responses:
         '201':
           description: Campanha criada
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/notificacoes:
     get:
       tags: [Notificacoes]
-      summary: Lista notificações enviadas
+      summary: Lista notificações enviadas pelo hemocentro
       security:
         - BearerAuth: []
       parameters:
@@ -629,6 +1029,16 @@ paths:
       responses:
         '200':
           description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notificacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/relatorios/previsao:
     get:
@@ -647,7 +1057,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/TipoSanguineo'
         - name: semanas
           in: query
           schema:
@@ -656,6 +1066,12 @@ paths:
       responses:
         '200':
           description: Série de previsão
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/relatorios/media-doacoes:
     get:
@@ -685,6 +1101,12 @@ paths:
       responses:
         '200':
           description: Resumo e distribuição
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/relatorios/estudo-doadores:
     get:
@@ -714,6 +1136,12 @@ paths:
       responses:
         '200':
           description: KPIs e faixas etárias
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/relatorios/cep:
     get:
@@ -749,6 +1177,12 @@ paths:
       responses:
         '200':
           description: Pontos com LCS, LCI e status
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
 
   /hemocentros/{id}/dashboard/resumo:
     get:
@@ -766,3 +1200,7 @@ paths:
       responses:
         '200':
           description: KPIs e séries
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
