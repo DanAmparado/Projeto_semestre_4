@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nosso Sangue API
-  version: 1.8.0
+  version: 1.9.0
   description: |
     API RESTful para integração entre hemocentros, doadores e sensores IoT.
 
@@ -11,10 +11,10 @@ info:
     Todos os endpoints abaixo estão implementados e testados.
 
 servers:
+  - url: https://nosso-sangue-api.onrender.com/api/v1
+    description: Produção (Render + Supabase remoto)
   - url: http://localhost:3000/api/v1
     description: Desenvolvimento local
-  - url: https://api-nosso-sangue.example.com/api/v1
-    description: Integração e demo
 
 tags:
   - name: Health
