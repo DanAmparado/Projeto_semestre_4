@@ -6,6 +6,10 @@ import { logger } from './lib/logger';
 import routes from './routes';
 import { errorHandler, notFound } from './middlewares/error';
 
+import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import path from 'path';
+
 const app = express();
 // Não anuncia que a app é Express (reduz fingerprinting)
 app.disable('x-powered-by');
@@ -27,6 +31,23 @@ app.get('/', (_req, res) => res.redirect('/api/v1/health'));
 
 // API versionada
 app.use('/api/v1', routes);
+
+// Documentação interativa (Swagger UI)
+const openapiPath = path.join(__dirname, '..', 'openapi.yaml');
+if (fs.existsSync(openapiPath)) {
+  app.get('/openapi.yaml', (_req, res) => res.sendFile(openapiPath));
+  app.use(
+    '/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(null, {
+      swaggerOptions: { url: '/openapi.yaml' },
+      customSiteTitle: 'Nosso Sangue API',
+    })
+  );
+  logger.info(`   Swagger:   http://localhost:${env.PORT}/docs`);
+} else {
+  logger.warn(`openapi.yaml não encontrado em ${openapiPath}; /docs desativado`);
+}
 
 // 404 e tratador de erro (sempre no final)
 app.use(notFound);
