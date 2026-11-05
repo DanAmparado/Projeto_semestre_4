@@ -1,27 +1,43 @@
 import { NextFunction, Request, Response } from 'express';
-import { ZodSchema } from 'zod';
+import { ZodTypeAny, z } from 'zod';
 
-/**
- * Valida o corpo da requisição com um schema Zod.
- * Em caso de erro, responde 400 com o formato padronizado.
- * Em caso de sucesso, substitui req.body pelo valor tipado e parseado.
- */
-export function validateBody<T>(schema: ZodSchema<T>) {
+function erroValidacao(res: Response, mensagem: string, detalhes: unknown): void {
+  res.status(400).json({
+    erro: { codigo: 'VALIDACAO', mensagem, detalhes },
+  });
+}
+
+export function validateBody<S extends ZodTypeAny>(schema: S) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req.body);
-
     if (!result.success) {
-      res.status(400).json({
-        erro: {
-          codigo: 'VALIDACAO',
-          mensagem: 'Corpo da requisição inválido',
-          detalhes: result.error.flatten(),
-        },
-      });
+      erroValidacao(res, 'Corpo da requisição inválido', result.error.flatten());
       return;
     }
+    req.body = result.data as z.infer<S>;
+    next();
+  };
+}
 
-    req.body = result.data;
+export function validateParams<S extends ZodTypeAny>(schema: S) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.params);
+    if (!result.success) {
+      erroValidacao(res, 'Parâmetros de rota inválidos', result.error.flatten());
+      return;
+    }
+    next();
+  };
+}
+
+export function validateQuery<S extends ZodTypeAny>(schema: S) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      erroValidacao(res, 'Query string inválida', result.error.flatten());
+      return;
+    }
+    (req as any).validatedQuery = result.data as z.infer<S>;
     next();
   };
 }

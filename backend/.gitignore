@@ -19,3 +19,7 @@ Thumbs.db
 .idea/
 .vscode/
 !.vscode/extensions.json
+
+# Gerado por scripts/copy-openapi.js
+/backend/openapi.yaml
+
