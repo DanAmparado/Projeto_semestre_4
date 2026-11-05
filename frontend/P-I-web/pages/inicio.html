@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo inicio">
+    <div>
+      <h2 class="titulo-secao">Estoque em tempo real</h2>
+      <section class="painel-cinza" aria-label="Estoque por tipo sanguíneo">
+        <div class="grafico" id="grafico"></div>
+        <div class="grafico__rotulos" id="rotulos"></div>
+      </section>
+      <h2 class="titulo-secao" style="margin-top:28px">Monitoramento câmara fria</h2>
+      <section class="painel-cinza camara" aria-live="polite">
+        <div class="camara__item">Temperatura<div class="camara__valor" id="temp">--</div></div>
+        <div class="camara__item">Alerta<div class="camara__valor camara__valor--off" id="alerta-camara">--</div></div>
+        <div class="camara__item">Umidade<div class="camara__valor" id="umid">--</div></div>
+      </section>
+    </div>
+    <aside class="alerta">
+      <h2 class="titulo-secao">Alertas pendentes</h2>
+      <ul class="alerta__itens" id="alertas"></ul>
+    </aside>
+  </main>
+  <script type="module" src="../js/inicio.js"></script>
+</body>
+</html>
