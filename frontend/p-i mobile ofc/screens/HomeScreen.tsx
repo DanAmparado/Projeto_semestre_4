@@ -48,9 +48,13 @@ export default function HomeScreen() {
       <Text style={styles.sub}>Pesquise a cidade e escolha o hemocentro para ver os níveis de sangue</Text>
       <Button size="sm" label="PESQUISA" pill={false} onPress={() => router.push('/home/consulta')} />
 
-      <Text style={[styles.h, { marginTop: 36 }]}>REQUISITOS PARA DOAR</Text>
       <Text style={styles.sub}>Saiba o que é necessário para você doar sangue</Text>
       <Button size="sm" label="SAIBA MAIS" pill={false} onPress={() => router.push('/home/requisitos')} />
+
+      <Text style={[styles.h, { marginTop: 36 }]}>MINHA CONTA</Text>
+      <Text style={styles.sub}>Acesse suas doações e seu perfil</Text>
+      <Button size="sm" label="VER DOAÇÕES" pill={false} onPress={() => router.push('/doacoes')} />
+      <Button size="sm" label="MEU PERFIL" pill={false} onPress={() => router.push('/perfil')} style={{ marginTop: 8 }} />
     </Screen>
   );
 }
