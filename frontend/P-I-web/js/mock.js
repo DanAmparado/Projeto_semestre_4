@@ -46,6 +46,11 @@ export async function mock(path, options = {}) {
     return { id: 'd-1', data_doacao: f(hoje), proxima_doacao_permitida: f(prox), movimentacao_id: 'm-1' };
   }
 
+  if (/\/campanhas$/.test(rota) && metodo === 'POST') {
+    const b = JSON.parse(options.body || '{}');
+    return { id: 'c-1', tipo_sanguineo: b.tipo_sanguineo, titulo: b.titulo, canal: b.canal || 'app', total_notificados: rand(1, 40) };
+  }
+
   if (/\/relatorios\/media-doacoes$/.test(rota))
     return { resumo: { total_doacoes: 124, media_diaria: 4.1, doadores_unicos: 98 }, distribuicao: TIPOS.map((t) => ({ tipo: t, quantidade: rand(4, 30) })) };
 
@@ -55,7 +60,7 @@ export async function mock(path, options = {}) {
       { faixa: '36-50', total: 50, retornaram: 28 }, { faixa: '51+', total: 20, retornaram: 7 }] };
 
   if (/\/relatorios\/previsao$/.test(rota))
-    return Array.from({ length: 4 }, (_, i) => {
+    return Array.from({ length: Number(q.get('horizonte')) || 4 }, (_, i) => {
       const d = rand(20, 40);
       return { semana_previsao: `Semana +${i + 1}`, demanda_prevista: d, limite_inferior_95: d - 6, limite_superior_95: d + 6 };
     });
@@ -63,7 +68,7 @@ export async function mock(path, options = {}) {
   if (/\/relatorios\/cep$/.test(rota))
     return Array.from({ length: 6 }, (_, i) => ({
       data_leitura: `2026-10-${String(20 + i).padStart(2, '0')}`, temperatura: +(3 + Math.random() * 2).toFixed(1), umidade: rand(58, 66),
-      media_global: 4.0, limite_controle_superior: 6.0, limite_controle_inferior: 2.0, status_ponto: 'dentro'
+      media_global: 4.0, limite_controle_superior: 6.0, limite_controle_inferior: 2.0, status_ponto: ['normal', 'normal', 'fora_controle', 'normal', 'fora_especificacao', 'normal'][i]
     }));
 
   if (rota === '/me' && metodo === 'PATCH') return { id: 'u-1', ...JSON.parse(options.body || '{}'), total_doacoes: 0, pontos: 0, ultima_doacao: null };

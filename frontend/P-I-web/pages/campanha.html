@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campanha | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <h2 class="titulo-secao">Nova campanha para doadores</h2>
+    <form class="painel-rosa campanha" id="form-campanha" novalidate>
+      <div class="campo">
+        <label for="tipo">Tipo sanguíneo</label>
+        <select id="tipo" required>
+          <option value="">Selecione</option>
+          <option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option>
+          <option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="titulo">Título</label>
+        <input id="titulo" maxlength="100" required>
+      </div>
+      <div class="campo">
+        <label for="mensagem">Mensagem</label>
+        <textarea id="mensagem" rows="5" maxlength="500" required></textarea>
+        <small class="contador" id="contador">0/500</small>
+      </div>
+      <div class="campo">
+        <label for="canal">Canal</label>
+        <select id="canal">
+          <option value="app" selected>App</option>
+          <option value="sms">SMS</option>
+          <option value="email">Email</option>
+          <option value="push">Push</option>
+        </select>
+      </div>
+      <button class="btn btn--verde btn--grande" type="submit" id="btn-enviar">Enviar campanha</button>
+    </form>
+  </main>
+
+  <script type="module" src="../js/campanha.js"></script>
+</body>
+</html>

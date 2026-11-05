@@ -3,6 +3,8 @@ import { sessaoAtiva, sair } from './auth.js';
 const MENU = [
   { id: 'inicio', texto: 'Início', href: 'inicio.html' },
   { id: 'doacao', texto: 'Nova doação', href: 'nova-doacao.html' },
+  { id: 'doador', texto: 'Doador', href: 'doador.html' },
+  { id: 'campanha', texto: 'Campanha', href: 'campanha.html' },
   { id: 'relatorios', texto: 'Relatórios', href: 'relatorios.html' },
   { id: 'cadastro', texto: 'Novo cadastro', href: 'novo-cadastro.html' }
 ];

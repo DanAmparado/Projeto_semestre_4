@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doador | Nosso Sangue</title>
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/pages.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header id="navbar"></header>
+  <main class="conteudo">
+    <h2 class="titulo-secao">Buscar doador</h2>
+    <form class="painel-filtro busca-doador" id="form-busca" novalidate>
+      <div class="campo">
+        <label for="cpf">CPF</label>
+        <input id="cpf" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off" required>
+      </div>
+      <button class="btn" type="submit" id="btn-buscar">Buscar</button>
+    </form>
+
+    <p class="doador-msg" id="msg" role="status" hidden></p>
+
+    <article class="doador-card" id="card" hidden>
+      <h3 id="d-nome"></h3>
+      <span class="badge-sangue" id="d-tipo"></span>
+      <dl class="doador-card__dados">
+        <div><dt>Total de doações</dt><dd id="d-total"></dd></div>
+        <div><dt>Última doação</dt><dd id="d-ultima"></dd></div>
+      </dl>
+      <button class="btn btn--vermelho" type="button" id="btn-registrar">Registrar doação</button>
+    </article>
+  </main>
+
+  <dialog class="modal" id="modal" aria-labelledby="modal-titulo">
+    <form method="dialog" id="form-doacao" novalidate>
+      <h3 id="modal-titulo">Registrar doação</h3>
+      <div class="campo">
+        <label for="peso">Peso (kg) - opcional</label>
+        <input id="peso" type="number" min="1" step="0.1">
+      </div>
+      <div class="campo">
+        <label for="obs">Observação - opcional</label>
+        <input id="obs" maxlength="500">
+      </div>
+      <div class="modal__acoes">
+        <button class="btn modal__cancelar" type="button" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn--verde" type="submit" id="btn-confirmar">Confirmar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="../js/doador.js"></script>
+</body>
+</html>
