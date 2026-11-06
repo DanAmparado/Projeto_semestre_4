@@ -33,7 +33,7 @@ Diagrama completo em [`docs/arquitetura.md`](docs/arquitetura.md).
 | API | https://nosso-sangue-api.onrender.com/api/v1 |
 | Documentação (Swagger) | https://nosso-sangue-api.onrender.com/docs |
 | OpenAPI (YAML) | https://nosso-sangue-api.onrender.com/openapi.yaml |
-| Front web | (a definir após deploy no Vercel) |
+| Front web | https://nosso-sangue.vercel.app/ |
 
 ## Estrutura do repositório
 
