@@ -1,1 +1,0 @@
-select tipo, titulo, mensagem, canal, lida from notificacoes where usuario_id = '13e37ea5-08f1-409a-963b-bffefcea0d61';
