@@ -6,7 +6,7 @@ Documento reproduzível de como o projeto está deployado em produção e como r
 
 | Recurso | URL |
 |---|---|
-| **API (Render)** | https://nosso-sangue-api.onrender.com/api/v1 |
+| **API (Render)** | https://nosso-sangue-api.onrender.com/ |
 | **Swagger** | https://nosso-sangue-api.onrender.com/docs |
 | **OpenAPI YAML** | https://nosso-sangue-api.onrender.com/openapi.yaml |
 | **Front Web (Vercel)** | https://nosso-sangue.vercel.app |
