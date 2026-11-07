@@ -30,7 +30,7 @@ Diagrama completo em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 | Recurso | URL |
 |---|---|
-| API | https://nosso-sangue-api.onrender.com/api/v1 |
+| API | https://nosso-sangue-api.onrender.com/ |
 | Documentação (Swagger) | https://nosso-sangue-api.onrender.com/docs |
 | OpenAPI (YAML) | https://nosso-sangue-api.onrender.com/openapi.yaml |
 | Front web | https://nosso-sangue.vercel.app/ |
