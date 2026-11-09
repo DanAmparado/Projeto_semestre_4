@@ -14,7 +14,7 @@ const char* WIFI_PASS = "";
 // ---------- Backend Nosso Sangue (direto no Render) ----------
 const char* API_URL_AMBIENTE = "https://nosso-sangue-api.onrender.com/api/v1/iot/ambiente";
 const char* API_URL_BALANCA  = "https://nosso-sangue-api.onrender.com/api/v1/iot/balanca";
-const char* IOT_KEY = "b179b3aaa4b633975400b358bc83b76f";
+const char* IOT_KEY = "<insira aqui a IOT_KEY>";
 const char* DEVICE_ID_AMBIENTE = "ESP32-DHT22-001";
 
 // ---------- Tipos sanguíneos ----------
