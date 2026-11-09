@@ -1,3 +1,5 @@
+// NÃO COMMITAR IOT_KEY REAL. O repositório é público.
+// Obter a chave com o Daniel (backend) e colar localmente antes de simular.
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <DHT.h>
@@ -13,8 +15,7 @@ const char* WIFI_PASS = "";
 // Certifique-se de que o terminal do cloudflared ainda está aberto e rodando!
 const char* API_URL_AMBIENTE = "https://nosso-sangue-api.onrender.com/api/v1/iot/ambiente";
 const char* API_URL_BALANCA  = "https://nosso-sangue-api.onrender.com/api/v1/iot/balanca";
-const char* IOT_KEY = "GjGyNKe73EmCDiXW1bLahWP1xlJ6qKa6Aw7dD2tvrBw=";
-
+const char* IOT_KEY = "SUA_IOT_KEY_AQUI";  // obter com o Daniel, NÃO COMMITAR
 const char* DEVICE_ID_AMBIENTE = "ESP32-DHT22-001";
 
 // ---------- Tipos sanguíneos ----------
