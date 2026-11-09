@@ -11,11 +11,10 @@
 const char* WIFI_SSID = "CirkitWifi";
 const char* WIFI_PASS = "";
 
-// ---------- Backend Nosso Sangue (via Cloudflare Tunnel) ----------
-// Certifique-se de que o terminal do cloudflared ainda está aberto e rodando!
+// ---------- Backend Nosso Sangue (direto no Render) ----------
 const char* API_URL_AMBIENTE = "https://nosso-sangue-api.onrender.com/api/v1/iot/ambiente";
 const char* API_URL_BALANCA  = "https://nosso-sangue-api.onrender.com/api/v1/iot/balanca";
-const char* IOT_KEY = "SUA_IOT_KEY_AQUI";  // obter com o Daniel, NÃO COMMITAR
+const char* IOT_KEY = "b179b3aaa4b633975400b358bc83b76f";
 const char* DEVICE_ID_AMBIENTE = "ESP32-DHT22-001";
 
 // ---------- Tipos sanguíneos ----------
@@ -38,7 +37,7 @@ const float TEMPERATURA_LIMITE = 6.0;
 const int   ESTOQUE_CRITICO    = 2;
 const float KG_POR_BOLSA            = 0.640;  // 500ml sangue + 70ml anticoag + bolsa (~40g)
 const int   MAX_BOLSAS_CACAMBA      = 7;      // 7 × 0,64 = 4,48 kg (< 5 kg da balança)
-const float FATOR_CALIBRACAO   = 420.0;
+const float FATOR_CALIBRACAO   = 429496.0;  // Cirkit: 429496 ≈ 2^32/10000 por kg
 
 DHT dht(DHT_PIN, DHT_TYPE);
 HX711 balancas[NUM_TIPOS];
@@ -177,13 +176,17 @@ void setup() {
   ventoinha.attach(VENTOINHA_PIN);
   ventoinha.write(0);
 
-  for (int i = 0; i < NUM_TIPOS; i++) {
-    balancas[i].begin(DT_PINS[i], SCK_PINS[i]);
-    balancas[i].set_scale(FATOR_CALIBRACAO);
-    balancas[i].tare(); 
-    pesoKg[i] = 0;
-    pesoLido[i] = false;
-  }
+    // Offset fixo: raw vazio no Cirkit é 42950.
+    // Não usar tare() porque ele captura o que estiver na balança no setup.
+    const long RAW_VAZIO_CIRKIT = 42950;
+
+    for (int i = 0; i < NUM_TIPOS; i++) {
+        balancas[i].begin(DT_PINS[i], SCK_PINS[i]);
+        balancas[i].set_scale(FATOR_CALIBRACAO);
+        balancas[i].set_offset(RAW_VAZIO_CIRKIT);
+        pesoKg[i] = 0;
+        pesoLido[i] = false;
+    }
 
   Serial.println("Tentando conectar ao WiFi...");
   conectarWiFi();
@@ -222,6 +225,10 @@ void loop() {
     pesoKg[idx] = (kg < 0) ? 0 : kg;
     pesoLido[idx] = true;
     delay(5);
+    
+    // // DEBUG: mostra o raw e o kg convertido
+    // long raw = balancas[idx].read();
+    // Serial.printf("[DEBUG] %s raw=%ld kg=%.3f\n", NOMES_TIPOS[idx], raw, pesoKg[idx]);
   }
   idx = (idx + 1) % NUM_TIPOS;
 
