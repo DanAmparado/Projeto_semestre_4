@@ -121,6 +121,7 @@ Hemocentro padrão: `11111111-1111-1111-1111-111111111111` (Hemocentro de Franca
 - **Contrato da API:** [`docs/api/openapi.yaml`](docs/api/openapi.yaml) (v1.9.0)
 - **Swagger interativo:** `/docs` no backend
 - **Fluxo de autenticação:** [`docs/api/auth-flow.md`](docs/api/auth-flow.md)
+- **Guia IoT:** [`iot/readme.md`](iot/readme.md)
 - **Contrato IoT:** [`docs/api/iot-contract.md`](docs/api/iot-contract.md)
 - **Decisões de arquitetura:** [`docs/adr/`](docs/adr/)
 - **Roteiro do vídeo:** [`docs/apresentacao.md`](docs/apresentacao.md)
