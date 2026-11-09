@@ -1,17 +1,17 @@
-# Integração Wokwi — Simulação IoT ao Backend Nosso Sangue
+# Integração IoT (Cirkit Designer) — Simulação ao Backend Nosso Sangue
 
-**Última atualização:** 2026-11-07
+**Última atualização:** 2026-11-08
 **Responsável pelo backend:** Daniel Lemos
 **Time de IoT:** Carolina Carneiro
-**Simulação atual (Blynk):** https://wokwi.com/projects/476997550075436033
+**Simulação atual (Cirkit Designer):** https://app.cirkitdesigner.com/project/84d2f17c-1e9b-4c09-8d69-0a404e494d14
 
 ---
 
 ## 1. Objetivo
 
-Conectar a simulação ESP32 do Wokwi (DHT22 + 8 balanças HX711) ao backend em produção do projeto Nosso Sangue, **substituindo o broker MQTT do Blynk por chamadas HTTP diretas**.
+Conectar a simulação do microcontrolador ESP32-S3 no Cirkit Designer (DHT22 + 8 balanças HX711) ao backend em produção do projeto Nosso Sangue, enviando dados via chamadas HTTP diretas.
 
-A lógica de negócio do sketch (regras de refrigeração automática, alerta de estoque crítico, leitura não bloqueante das balanças) **permanece intacta**. Só muda o transporte de dados.
+Nota de Migração: O projeto iniciou no simulador Wokwi, mas foi migrado para o Cirkit Designer devido a limitações severas do Wokwi com conexões TLS/HTTPS (erro Falha na conexão TLS), que impediam o envio de dados para o Render.
 
 ---
 
@@ -19,7 +19,7 @@ A lógica de negócio do sketch (regras de refrigeração automática, alerta de
 
 ```
 ┌─────────────────┐      HTTP POST (JSON)      ┌──────────────────────┐
-│  Wokwi (ESP32)  │ ─────────────────────────> │  Backend (Render)    │
+│ Cirkit (ESP32-S3│ ─────────────────────────> │  Backend (Render)    │
 │  DHT22 + HX711  │   Header: x-iot-key        │  /api/v1/iot/...     │
 └─────────────────┘                            └──────────┬───────────┘
                                                           │
@@ -32,9 +32,11 @@ A lógica de negócio do sketch (regras de refrigeração automática, alerta de
                                                └──────────────────────┘
 ```
 
-- **Wokwi:** simula o hardware e se conecta à internet via rede virtual `Wokwi-GUEST`.
-- **Backend:** API REST no Render valida o header `x-iot-key`, grava a leitura e dispara triggers.
-- **Banco:** Supabase armazena leituras e gera alertas automáticos (temperatura fora da faixa 2–6 °C e estoque ≤ 5 bolsas).
+-Cirkit Designer: Simula o hardware real (ESP32-S3) e conecta à internet através da rede virtual nativa CirkitWifi.
+
+-Backend: API REST no Render valida o header x-iot-key, grava a leitura e dispara triggers.
+
+-Banco: Supabase armazena leituras e gera alertas automáticos (temperatura fora da faixa 2–6 °C e estoque ≤ 5 bolsas).
 
 ---
 
@@ -49,6 +51,8 @@ A lógica de negócio do sketch (regras de refrigeração automática, alerta de
 | `DEVICE_ID_AMBIENTE` | Identificador do sensor de ambiente | `ESP32-DHT22-001` (fixo, já cadastrado no banco) |
 | `DEVICE_ID_BALANCA` | Identificador da balança | `ESP32-BALANCA-O+` (fixo, já cadastrado no banco) |
 
+**🚨 Aviso sobre Túneis (Ngrok/Cloudflare):** **Não utilize ferramentas de túnel** (Ngrok, Cloudflare Tunnel) para expor o Render. Os firewalls (WAF) dessas ferramentas bloqueiam conexões de simuladores IoT com erros 403 Forbidden ou connection refused. A comunicação deve ser feita diretamente para a URL do Render.
+
 **Observação:** o backend no plano free do Render **hiberna após 15 min sem uso**. Antes de iniciar a simulação, "acorde" o backend:
 
 ```bash
@@ -61,57 +65,69 @@ Se demorar mais de 10 segundos, é o cold start. Aguarde retornar `{"ok":true,..
 
 ## 4. Bibliotecas necessárias (Wokwi)
 
-O `libraries.txt` deve conter:
+No Cirkit Designer, as bibliotecas são gerenciadas automaticamente durante a compilação. O código utiliza:
 
-```
+WiFi.h, HTTPClient.h, WiFiClientSecure.h (Nativas do ESP32)
+
 DHT sensor library
-Adafruit Unified Sensor
+
 ESP32Servo
+
 HX711 Arduino Library
-```
 
-**Remover** (não são mais necessárias):
-- `PubSubClient` — o Blynk/MQTT foi substituído por HTTP
-
-`WiFi.h`, `HTTPClient.h` e `WiFiClientSecure.h` já vêm com o ESP32 core (não precisam de biblioteca externa).
+(Não é mais necessário adicionar bibliotecas ao libraries.txt manualmente, o Cirkit faz isso via #include no código).
 
 ---
+## 5. Pinagem adaptada 
 
-## 5. Sketch adaptado (`sketch.ino`)
+Como utilizamos a placa ESP32-S3 no Cirkit, os pinos do ESP32 clássico (como 34, 35, 36, 26) não existem ou têm funções diferentes. O código foi adaptado para a seguinte pinagem:
 
-Substitua o arquivo do Wokwi por este. **Só foram alterados**: as bibliotecas, o bloco de constantes do Blynk (viraram constantes do backend), as duas funções de envio e o ciclo do `loop()`. O resto (servo, buzzer, DHT, HX711, lógica de refrigeração e alerta) está **idêntico** ao original.
+Componente	Pino no ESP32-S3	Observação
+DHT22	15	Sensor de Temperatura e Umidade
+Servo (Ventoinha)	21	Controle PWM
+Buzzer (Piezo)	47	Alerta sonoro
+LED (Comunicado)	48	Alerta visual
+HX711 (8x)	DAT: 1, 2, 4, 5, 6, 7, 8, 9
+CLK: 10, 11, 12, 13, 14, 16, 17, 18	Conectar em pares (A+ até O-)
 
-```cpp
+---
+## 6. Sketch adaptado (`sketch.ino`)
+
+Substitua o arquivo do Cirkit por este. As principais mudanças incluem: adaptação de pinos, envio de todas as 8 balanças em sistema de rodízio, e remoção dos túneis.
+
+cpp
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include <DHT.h>
 #include <ESP32Servo.h>
 #include <HX711.h>
+#include <WiFiClientSecure.h>
 
-// ---------- Wi-Fi (rede simulada do Wokwi) ----------
-const char* WIFI_SSID = "Wokwi-GUEST";
+// ---------- Wi-Fi (Rede simulada do Cirkit) ----------
+const char* WIFI_SSID = "CirkitWifi";
 const char* WIFI_PASS = "";
 
-// ---------- Backend Nosso Sangue ----------
-const char* API_BASE_URL = "https://nosso-sangue-api.onrender.com/api/v1";
-const char* IOT_KEY      = "COLE_AQUI_A_IOT_KEY_DO_RENDER";
+// ---------- Backend Nosso Sangue (Conexão Direta - Sem Túneis) ----------
+const char* API_URL_AMBIENTE = "https://nosso-sangue-api.onrender.com/api/v1/iot/ambiente";
+const char* API_URL_BALANCA  = "https://nosso-sangue-api.onrender.com/api/v1/iot/balanca";
+const char* IOT_KEY = "COLE_AQUI_A_IOT_KEY_DO_RENDER";
 
 const char* DEVICE_ID_AMBIENTE = "ESP32-DHT22-001";
-const char* DEVICE_ID_BALANCA   = "ESP32-BALANCA-O+";
 
 // ---------- Tipos sanguíneos ----------
 #define NUM_TIPOS 8
 const char* NOMES_TIPOS[NUM_TIPOS] = {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"};
 
-// ---------- Pinos ----------
+// ---------- Pinos (Adaptados para ESP32-S3 no Cirkit) ----------
 #define DHT_PIN              15
 #define DHT_TYPE             DHT22
-#define VENTOINHA_PIN        26
-#define BUZZER_PIN           25
-#define COMUNICADO_LED_PIN   27
-const int DT_PINS[NUM_TIPOS]  = {34, 35, 36, 39, 32, 33, 13, 14};
-const int SCK_PINS[NUM_TIPOS] = { 4, 16, 17, 18, 19, 21, 22, 23};
+#define VENTOINHA_PIN        21 
+#define BUZZER_PIN           47 
+#define COMUNICADO_LED_PIN   48 
+
+// Mapeamento dos pinos das 8 balanças na ESP32-S3
+const int DT_PINS[NUM_TIPOS]  = { 1,  2,  4,  5,  6,  7,  8,  9};
+const int SCK_PINS[NUM_TIPOS] = {10, 11, 12, 13, 14, 16, 17, 18};
 
 // ---------- Regras de negócio ----------
 const float TEMPERATURA_LIMITE = 6.0;
@@ -137,11 +153,14 @@ void enviarAmbiente(float temperatura, float umidade) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   WiFiClientSecure client;
-  client.setInsecure(); // Wokwi: não valida certificado
-
+  client.setInsecure(); // Ignora validação de certificado (necessário para simulação)
+  
   HTTPClient http;
-  String url = String(API_BASE_URL) + "/iot/ambiente";
-  http.begin(client, url);
+  http.begin(client, API_URL_AMBIENTE); 
+  http.setReuse(false); 
+  http.setTimeout(15000); 
+
+  http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-iot-key", IOT_KEY);
 
@@ -158,26 +177,29 @@ void enviarAmbiente(float temperatura, float umidade) {
   http.end();
 }
 
-void enviarBalanca(float pesoKg) {
+void enviarBalanca(String deviceId, float pesoKg) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   WiFiClientSecure client;
   client.setInsecure();
-
+  
   HTTPClient http;
-  String url = String(API_BASE_URL) + "/iot/balanca";
-  http.begin(client, url);
+  http.begin(client, API_URL_BALANCA);
+  http.setReuse(false);
+  http.setTimeout(15000);
+
+  http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
   http.addHeader("Content-Type", "application/json");
   http.addHeader("x-iot-key", IOT_KEY);
 
-  String payload = "{\"device_id\":\"" + String(DEVICE_ID_BALANCA) +
+  String payload = "{\"device_id\":\"" + deviceId +
                    "\",\"peso_kg\":" + String(pesoKg, 3) + "}";
 
   int httpCode = http.POST(payload);
   if (httpCode > 0) {
-    Serial.printf("[Balanca] HTTP %d\n", httpCode);
+    Serial.printf("[Balanca %s] HTTP %d\n", deviceId.c_str(), httpCode);
   } else {
-    Serial.printf("[Balanca] Erro: %s\n", http.errorToString(httpCode).c_str());
+    Serial.printf("[Balanca %s] Erro: %s\n", deviceId.c_str(), http.errorToString(httpCode).c_str());
   }
   http.end();
 }
@@ -198,7 +220,10 @@ const unsigned long BIPE_MS = 400;
 void atualizarBuzzer(unsigned long agoraMs) {
   bool tocando = alertaEstoqueAtivo && ((agoraMs / BIPE_MS) % 2 == 0);
   if (!tocando) {
-    if (buzzerNivel) { digitalWrite(BUZZER_PIN, LOW); buzzerNivel = false; }
+    if (buzzerNivel) {
+      digitalWrite(BUZZER_PIN, LOW);
+      buzzerNivel = false;
+    }
     return;
   }
   unsigned long agoraUs = micros();
@@ -210,19 +235,33 @@ void atualizarBuzzer(unsigned long agoraMs) {
 }
 
 void conectarWiFi() {
-  Serial.print("Conectando ao WiFi");
+  Serial.print("Conectando ao WiFi (CirkitWifi)");
+  
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
+  
+  int tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
+    delay(500);
     Serial.print(".");
+    tentativas++;
   }
-  Serial.println(" conectado!");
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(" conectado!");
+    Serial.print("Endereço IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println(" FALHOU! (Tempo esgotado)");
+  }
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  Serial.println("--- INICIANDO O SISTEMA ---");
+  delay(2000); 
+  Serial.println("--- INICIANDO O SISTEMA ---"); 
+  
   pinMode(BUZZER_PIN, OUTPUT);
   pinMode(COMUNICADO_LED_PIN, OUTPUT);
   dht.begin();
@@ -233,11 +272,14 @@ void setup() {
   for (int i = 0; i < NUM_TIPOS; i++) {
     balancas[i].begin(DT_PINS[i], SCK_PINS[i]);
     balancas[i].set_scale(FATOR_CALIBRACAO);
+    balancas[i].tare(); 
     pesoKg[i] = 0;
     pesoLido[i] = false;
   }
 
+  Serial.println("Tentando conectar ao WiFi...");
   conectarWiFi();
+  Serial.println("WiFi Conectado!");
 }
 
 void loop() {
@@ -248,8 +290,14 @@ void loop() {
     if (agora - ultimoMovimentoServo >= INTERVALO_SERVO) {
       ultimoMovimentoServo = agora;
       anguloServo += direcaoServo * PASSO_SERVO;
-      if (anguloServo >= 180) { anguloServo = 180; direcaoServo = -1; }
-      if (anguloServo <= 0)   { anguloServo = 0;   direcaoServo = 1;  }
+      if (anguloServo >= 180) {
+        anguloServo = 180;
+        direcaoServo = -1;
+      }
+      if (anguloServo <= 0)   {
+        anguloServo = 0;
+        direcaoServo = 1;
+      }
       ventoinha.write(anguloServo);
     }
   } else if (anguloServo != 0) {
@@ -265,6 +313,7 @@ void loop() {
     float kg = balancas[idx].get_units(1);
     pesoKg[idx] = (kg < 0) ? 0 : kg;
     pesoLido[idx] = true;
+    delay(5);
   }
   idx = (idx + 1) % NUM_TIPOS;
 
@@ -284,24 +333,31 @@ void loop() {
     if (deveRefrigerar != refrigeracaoLigada) {
       refrigeracaoLigada = deveRefrigerar;
       Serial.println(refrigeracaoLigada
-        ? ">> Refrigeracao LIGADA automaticamente"
-        : ">> Refrigeracao DESLIGADA automaticamente");
+                     ? ">> Refrigeracao LIGADA automaticamente"
+                     : ">> Refrigeracao DESLIGADA automaticamente");
     }
   } else {
     Serial.println("Falha ao ler o DHT22");
   }
 
-  // Balança de O+ (índice 6)
-  int idxOPlus = 6;
-  if (pesoLido[idxOPlus]) {
-    enviarBalanca(pesoKg[idxOPlus]);
+  // --- Rodízio de envio das balanças ---
+  static uint8_t idxEnvioBalanca = 0;
+  
+  if (pesoLido[idxEnvioBalanca]) {
+    String idBalanca = String("ESP32-BALANCA-") + String(NOMES_TIPOS[idxEnvioBalanca]);
+    enviarBalanca(idBalanca, pesoKg[idxEnvioBalanca]);
   }
+  
+  idxEnvioBalanca = (idxEnvioBalanca + 1) % NUM_TIPOS;
 
-  // Alerta de estoque (local — o backend também gera o dele no banco)
+  // Alerta de estoque (local)
   bool qualquerCritico = false;
   String resumo = "";
   for (int i = 0; i < NUM_TIPOS; i++) {
-    if (!pesoLido[i]) { resumo += String(NOMES_TIPOS[i]) + ":? "; continue; }
+    if (!pesoLido[i]) {
+      resumo += String(NOMES_TIPOS[i]) + ":? ";
+      continue;
+    }
     int bolsas = (int)lroundf(pesoKg[i] / KG_POR_BOLSA);
     if (bolsas < 0) bolsas = 0;
     if (bolsas > 99) bolsas = 99;
@@ -313,51 +369,32 @@ void loop() {
   if (qualquerCritico != alertaEstoqueAtivo) {
     alertaEstoqueAtivo = qualquerCritico;
     Serial.println(alertaEstoqueAtivo
-      ? ">> ALERTA: estoque CRITICO!"
-      : ">> Estoque normalizado.");
+                   ? ">> ALERTA: estoque CRITICO!"
+                   : ">> Estoque normalizado.");
   }
 }
-```
 
 ---
 
-## 6. O que mudou em relação ao sketch original
-
-| Item | Original (Blynk) | Adaptado (Nosso Sangue) |
-|---|---|---|
-| Transporte | MQTT (PubSubClient) | HTTP POST (HTTPClient) |
-| Biblioteca | `PubSubClient.h` | `HTTPClient.h` + `WiFiClientSecure.h` |
-| Autenticação | `device` + `BLYNK_AUTH_TOKEN` | Header `x-iot-key` |
-| Endpoint | `blynk.cloud:1883` | `nosso-sangue-api.onrender.com/api/v1/iot/...` |
-| Formato | Tópico MQTT + payload simples | JSON no corpo do POST |
-| Envio de temperatura/umidade | `publish("ds/Temperatura", ...)` | `enviarAmbiente(t, u)` |
-| Envio de estoque | 8 tópicos MQTT | 1 balança (`ESP32-BALANCA-O+`) |
-| Refrigeração/estoque crítico | Tópicos MQTT | Alertas automáticos no backend (trigger) |
-| Servo (ventoinha) | Mantido | **Mantido** (não envia ao backend) |
-| Buzzer | Mantido | **Mantido** (não envia ao backend) |
-| LED comunicado | Via MQTT downlink | Removido (não há acionamento remoto) |
-
----
 
 ## 7. Como testar
 
-### 7.1. Monitor Serial do Wokwi
+### 7.1. Monitor Serial do Cirkit
 
-Você deve ver a cada 2s:
+Você deve ver a cada 2s o envio intercalado de uma balança e do ambiente:
 
-```
+text
 Temp: 3.5C | Umid: 60% | Estoque: A+:10 A-:10 B+:10 ...
 [Ambiente] HTTP 201
-[Balanca] HTTP 201
-```
+[Balanca ESP32-BALANCA-A+] HTTP 201
+[Balanca ESP32-BALANCA-A-] HTTP 201
 
-| Código | Significado |
-|---|---|
-| `HTTP 201` | Sucesso — leitura gravada |
-| `HTTP 401` | `IOT_KEY` incorreta |
-| `HTTP 404` | `device_id` não cadastrado no banco |
-| `HTTP -1` ou `HTTP -11` | Backend dormindo (cold start do Render) |
-| `HTTP -1` (após aquecer) | Sem conexão com internet |
+**Código	Significado**
+
+**HTTP 201	Sucesso** — leitura gravada no banco.
+**HTTP 404	device_id** (ex: ESP32-BALANCA-B+) não cadastrado no Supabase.
+**HTTP 403**	Você está usando um túnel (Ngrok/Cloudflare) no meio do caminho. Remova o túnel.
+**HTTP -1**	Backend dormindo (cold start do Render) ou sem internet.
 
 ### 7.2. Verificar no banco (Supabase Studio)
 
@@ -407,32 +444,15 @@ Esperado: `{"ok":true,"leitura_id":...}`.
 
 | Sintoma | Causa | Solução |
 |---|---|---|
-| `HTTP -1` na primeira requisição | Render dormindo | Aquecer com `curl .../health` antes |
-| `HTTP 401` | `IOT_KEY` errada | Recopiar do painel do Render |
-| `HTTP 404` | `device_id` inválido | Conferir `ESP32-DHT22-001` e `ESP32-BALANCA-O+` |
-| `SSL error` ou `connection failed` | `WiFiClientSecure` sem `setInsecure` | Já incluído no sketch — verificar |
-| WiFi não conecta | Rede errada no Wokwi | `WIFI_SSID` deve ser `"Wokwi-GUEST"` e senha vazia |
-| Servo não se move | Temperatura abaixo de 6 °C | Comportamento esperado — aumentar a temperatura no DHT22 do Wokwi |
-| Buzzer não toca | Estoque acima de 2 bolsas | Comportamento esperado — colocar peso nas balanças |
-
----
-
-## 9. Limitações
-
-- **Apenas a balança de O+** é enviada ao backend. As outras 7 (A+, A-, B+, B-, AB+, AB-) **funcionam localmente no sketch** (movimentam o buzzer e o resumo no Serial), mas não geram leitura no banco. Se quiser enviar todas, cadastre os 8 `device_id` no banco e adapte o `loop()` para chamar `enviarBalanca` 8 vezes.
-- **Comunicado remoto removido.** No Blynk havia um downlink MQTT que acendia um LED. Como o backend não implementa esse canal, o LED fica sempre apagado. Se for necessário na demo, acionar manualmente no código.
-- **Cold start do Render.** A primeira requisição após 15 min de inatividade pode levar 30 s. Aquecer antes.
-
----
-
-## 10. Checklist final antes da demo
-
-- [ ] `IOT_KEY` copiada do Render (não commitada)
-- [ ] Backend aquecido (`curl .../health` retornando rápido)
-- [ ] Wokwi rodando com o sketch adaptado
-- [ ] Monitor Serial mostra `HTTP 201` a cada 2 s
-- [ ] Supabase Studio confirma leituras novas em `leituras_ambiente` e `leituras_balanca`
-- [ ] Dashboard web (`nosso-sangue.vercel.app`) mostra as leituras em **Câmara Fria**
-- [ ] Temperatura elevada no Wokwi (>6 °C) gera alerta automático em **Alertas**
+| `HTTP -1` na primeira requisição | Render dormindo (Cold Start) | Aquecer com `curl .../health` antes de rodar o Cirkit. |
+| `HTTP 401` | `IOT_KEY` errada | Recopiar a chave do painel do Render e atualizar no código. |
+| `HTTP 403` (Forbidden) | Uso de Ngrok ou Cloudflare Tunnel | Remover os túneis. O Cirkit deve apontar **diretamente** para o Render. |
+| `HTTP 404` (nas balanças) | `device_id` não cadastrado no Supabase | Rodar o script SQL para cadastrar as 8 balanças (ex: `ESP32-BALANCA-A+`) na tabela `sensores`. |
+| `SSL error` ou `connection failed` | `WiFiClientSecure` sem `setInsecure` ou simulação no Wokwi | Já incluído no sketch do Cirkit. Se estiver no Wokwi, migrar para o Cirkit Designer. |
+| WiFi não conecta | Rede errada no código | `WIFI_SSID` deve ser `"CirkitWifi"` e a senha vazia (`""`). |
+| Servo não se move | Temperatura abaixo de 6 °C | Comportamento esperado — aumentar a temperatura no DHT22 do Cirkit para acima de 6 °C. |
+| Buzzer não toca | Estoque acima de 2 bolsas | Comportamento esperado — colocar peso (≤ 0,9 kg) em alguma balança para ativar o alerta crítico. |
+| Dashboard não atualiza | Cache do Next.js (Vercel) | Adicionar `export const dynamic = 'force-dynamic';` no topo do arquivo da página ou recarregar com `Ctrl + F5`. |
+| Balanças marcam 0 | Falta de calibração inicial | O código já faz o `tare()` no setup. Certifique-se de iniciar a simulação com o peso em 0 antes de alterar o slider. |
 
 ---
