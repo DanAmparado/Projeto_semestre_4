@@ -36,7 +36,8 @@ const int SCK_PINS[NUM_TIPOS] = {10, 11, 12, 13, 14, 16, 17, 18};
 // ---------- Regras de negócio ----------
 const float TEMPERATURA_LIMITE = 6.0;
 const int   ESTOQUE_CRITICO    = 2;
-const float KG_POR_BOLSA       = 0.450;
+const float KG_POR_BOLSA            = 0.640;  // 500ml sangue + 70ml anticoag + bolsa (~40g)
+const int   MAX_BOLSAS_CACAMBA      = 7;      // 7 × 0,64 = 4,48 kg (< 5 kg da balança)
 const float FATOR_CALIBRACAO   = 420.0;
 
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -249,12 +250,17 @@ void loop() {
 
   // --- Rodízio de envio das balanças ---
   static uint8_t idxEnvioBalanca = 0;
-  
+
   if (pesoLido[idxEnvioBalanca]) {
+    int bolsasEnvio = (int)lroundf(pesoKg[idxEnvioBalanca] / KG_POR_BOLSA);
+    if (bolsasEnvio < 0) bolsasEnvio = 0;
+    if (bolsasEnvio > MAX_BOLSAS_CACAMBA) bolsasEnvio = MAX_BOLSAS_CACAMBA;
+
     String idBalanca = String("ESP32-BALANCA-") + String(NOMES_TIPOS[idxEnvioBalanca]);
-    enviarBalanca(idBalanca, pesoKg[idxEnvioBalanca]);
+    // Envia o peso RECALCULADO (bolsas × 0.640), nunca o bruto do HX711
+    enviarBalanca(idBalanca, bolsasEnvio * KG_POR_BOLSA);
   }
-  
+
   idxEnvioBalanca = (idxEnvioBalanca + 1) % NUM_TIPOS;
 
   // Alerta de estoque (local)
@@ -267,7 +273,7 @@ void loop() {
     }
     int bolsas = (int)lroundf(pesoKg[i] / KG_POR_BOLSA);
     if (bolsas < 0) bolsas = 0;
-    if (bolsas > 99) bolsas = 99;
+    if (bolsas > MAX_BOLSAS_CACAMBA) bolsas = MAX_BOLSAS_CACAMBA;
     if (bolsas <= ESTOQUE_CRITICO) qualquerCritico = true;
     resumo += String(NOMES_TIPOS[i]) + ":" + String(bolsas) + (bolsas <= ESTOQUE_CRITICO ? "! " : " ");
   }
