@@ -7,9 +7,14 @@ await navbar('inicio');
 const grafico = document.getElementById('grafico');
 const rotulos = document.getElementById('rotulos');
 api.TIPOS.forEach((t) => {
-  grafico.insertAdjacentHTML('beforeend', `<div class="grafico__col"><div class="grafico__barra" data-tipo="${t}" style="height:0"></div></div>`);
+  grafico.insertAdjacentHTML('beforeend', `
+    <div class="grafico__col">
+      <span class="grafico__valor" data-valor="${t}">0</span>
+      <div class="grafico__barra" data-tipo="${t}" style="height:0"></div>
+    </div>`);
   rotulos.insertAdjacentHTML('beforeend', `<span>${t}</span>`);
 });
+rotulos.insertAdjacentHTML('afterend', '<p class="grafico__unidade">Quantidade de bolsas</p>');
 
 // Mesma classificação do dashboard do backend: crítico <= nivel_critico, baixo <= nivel_minimo
 const nivel = (i) => i.quantidade_bolsas <= i.nivel_critico ? 'crítico' : i.quantidade_bolsas <= i.nivel_minimo ? 'baixo' : 'normal';
@@ -24,6 +29,8 @@ async function carregarEstoque() {
       const i = por[t];
       b.style.height = `${((i?.quantidade_bolsas ?? 0) / max) * 95}%`;
       b.title = i ? `${t}: ${i.quantidade_bolsas} bolsas (${nivel(i)})` : `${t}: sem dados`;
+      const v = grafico.querySelector(`[data-valor="${t}"]`);
+      if (v) v.textContent = i?.quantidade_bolsas ?? 0;
     });
   } catch (err) { toast(err.message, 'falha'); }
 }
