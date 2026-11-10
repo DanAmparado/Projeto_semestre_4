@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, Text, View, useWindowDimensions, Image} from 'react-native';
 import Button from '../components/Button';
 import Screen from '../components/Screen';
 import { NOTICIAS } from '../data/options';
@@ -33,7 +33,11 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <View style={[styles.news, { width: cardW }]}>
               {/* TODO: trocar pelo banner/imagem vindo da API */}
-              <Text style={{ color: '#777', fontWeight: '700' }}>{item.titulo}</Text>
+              <Image 
+                source={item.imagem} 
+                style={styles.newsImage} 
+                resizeMode="cover" 
+              />
             </View>
           )}
         />
@@ -62,7 +66,23 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   h: { fontSize: 17, fontWeight: '900', color: '#000', textAlign: 'center', marginBottom: 14 },
   sub: { fontSize: 12, textAlign: 'center', marginBottom: 12, maxWidth: 240 },
-  news: { height: 150, backgroundColor: colors.card, borderRadius: 24, alignItems: 'center', justifyContent: 'center', elevation: 3 },
+ news: { 
+    height: 150, 
+    backgroundColor: colors.card, 
+    borderRadius: 24, 
+    overflow: 'hidden', // OBRIGATÓRIO: Impede que a imagem vaze do card
+    elevation: 3,
+    justifyContent: 'flex-end', 
+  },
+
+  // A imagem agora ocupa 100% da caixa, sem precisar de absoluteFill
+  newsImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute', // Coloca a imagem no fundo
+    top: 0,
+    left: 0,
+  },
   dots: { flexDirection: 'row', gap: 6, marginTop: 10 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ccc' },
 });

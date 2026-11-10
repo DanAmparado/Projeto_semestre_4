@@ -6,9 +6,14 @@ export const ESTADOS = [
 export const GENEROS = ['Masculino', 'Feminino', 'Outro', 'Prefiro não informar'];
 
 export const NOTICIAS = [
-  { id: '1', titulo: 'Notícia 1' },
-  { id: '2', titulo: 'Notícia 2' },
-  { id: '3', titulo: 'Notícia 3' },
+  { id: '1',
+    imagem: require('../assets/BANNER-DAODORES.png')
+   },
+  { id: '2',
+    imagem: require('../assets/banner-tipo-certo.png')
+   },
+  { id: '3',
+    imagem: require('../assets/junho-vermelho-banner.png')},
 ];
 
 export const REQUISITOS: { titulo: string; cor: 'dark' | 'bright'; itens: string[] }[] = [
