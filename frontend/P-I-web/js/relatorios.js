@@ -45,13 +45,24 @@ $('tipo').addEventListener('change', async () => {
   PADROES[tipo]();
   $('form-relatorio').requestSubmit();   // gera já com os padrões; o usuário pode ajustar e clicar em Gerar
 });
-
-const rotulo = (k) => k.replaceAll('_', ' ');
+const ROTULOS = {
+  semana_previsao: 'Semana (início)',
+  demanda_prevista: 'Demanda prevista (bolsas)',
+  limite_inferior_95: 'Limite inferior 95%',
+  limite_superior_95: 'Limite superior 95%',
+  componente_tendencia: 'Tendência',
+  componente_sazonal: 'Sazonalidade'
+};
+const rotulo = (k) => ROTULOS[k] ?? k.replaceAll('_', ' ');
+const fmt = (v) => {
+  if (typeof v === 'number' && !Number.isInteger(v)) return v.toFixed(1);
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v.split('-').reverse().join('/');
+  return v;
+};
 const kpis = (o) => `<div class="kpis">${Object.entries(o).map(([k, v]) => `<div class="kpi"><span>${esc(rotulo(k))}</span><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 function tabela(linhas) {
   if (!linhas?.length) return '<p class="resultado__vazio">Sem dados para o período</p>';
-  const cols = Object.keys(linhas[0]);
-  return `<table class="tabela"><thead><tr>${cols.map((c) => `<th>${esc(rotulo(c))}</th>`).join('')}</tr></thead><tbody>
+  const cols = Object.keys(linhas[0]).filter((c) => !['componente_tendencia', 'componente_sazonal'].includes(c)); return `<table class="tabela"><thead><tr>${cols.map((c) => `<th>${esc(rotulo(c))}</th>`).join('')}</tr></thead><tbody>
     ${linhas.map((l) => `<tr>${cols.map((c) => `<td>${esc(l[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
@@ -103,7 +114,16 @@ const DESENHAR = {
         { label: 'Limite inferior 95%', data: r.map((p) => p.limite_inferior_95), borderColor: COR.vermelho, borderDash: [6, 6], borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: false }
       ]
     },
-    options: { scales: { y: { beginAtZero: true } }, plugins: { title: { display: true, text: 'Previsão de demanda' } } }
+    options: {
+      scales: {
+        x: { title: { display: true, text: 'Semana (início)' } },
+        y: { beginAtZero: true, title: { display: true, text: 'Demanda (bolsas por semana)' } }
+      },
+      plugins: {
+        title: { display: true, text: 'Previsão de demanda' },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y.toFixed(1)} bolsas` } }
+      }
+    }
   }),
 
   // D) CEP: pontos coloridos por status + linhas de referência
@@ -119,8 +139,10 @@ const DESENHAR = {
       data: {
         labels: r.map((p) => p.data_leitura),
         datasets: [
-          { label: 'Temperatura', data: r.map((p) => p.temperatura), borderColor: '#bbb', borderWidth: 1.5,
-            pointBackgroundColor: cores, pointBorderColor: cores, pointRadius: 6, pointHoverRadius: 8, fill: false },
+          {
+            label: 'Temperatura', data: r.map((p) => p.temperatura), borderColor: '#bbb', borderWidth: 1.5,
+            pointBackgroundColor: cores, pointBorderColor: cores, pointRadius: 6, pointHoverRadius: 8, fill: false
+          },
           ref('Média global', 'media_global', []),
           ref('Limite de controle superior', 'limite_controle_superior', [6, 6]),
           ref('Limite de controle inferior', 'limite_controle_inferior', [6, 6])
@@ -164,7 +186,7 @@ $('form-relatorio').addEventListener('submit', async (e) => {
   box.innerHTML = '<p class="resultado__vazio">Gerando relatório...</p>';
   try {
     const dados = await api.relatorio(tipo, params);
-    if (grafico) { grafico.destroy(); grafico = null; }
+    if (tipo === 'previsao') dados.sort((a, b) => a.semana_previsao.localeCompare(b.semana_previsao));
     box.innerHTML = RENDER[tipo](dados);
     const temDados = Array.isArray(dados) ? dados.length : true;
     if (temDados) DESENHAR[tipo](dados);
