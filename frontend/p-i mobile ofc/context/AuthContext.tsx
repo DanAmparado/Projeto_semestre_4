@@ -5,7 +5,10 @@ import { RegisterData, User } from '../types';
 
 type Ctx = {
   user: User | null;
+  signedIn: boolean;
   loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
   signIn: (email: string, senha: string) => Promise<void>;
   signUp: (data: RegisterData) => Promise<void>;
   signOut: () => Promise<void>;
@@ -24,57 +27,73 @@ export class PerfilIncompletoError extends Error {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // GET /me + e-mail da sessão do Supabase
+  // Lê a sessão e busca GET /me. Nunca lança: falhas viram `error`.
   const loadProfile = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return setUser(null);
-    const me = await api.getMe();
-    setUser(mapUser(me, session.user.email ?? ''));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSignedIn(!!session);
+      if (!session) {
+        setUser(null);
+        setError(null);
+        return;
+      }
+      const me = await api.getMe();
+      setUser(mapUser(me, session.user.email ?? ''));
+      setError(null);
+    } catch (e: any) {
+      setError(e?.message || 'Não foi possível carregar o perfil.');
+    }
+  };
+
+  const refetch = async () => {
+    setLoading(true);
+    await loadProfile();
+    setLoading(false);
   };
 
   useEffect(() => {
-    // O SDK já persiste e renova a sessão; aqui só retomamos o perfil ao abrir o app.
-    loadProfile()
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    loadProfile().finally(() => setLoading(false));
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') setUser(null);
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setSignedIn(false);
+        setError(null);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, senha: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
-    if (error) throw new Error(error.message);
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password: senha });
+    if (authError) throw new Error(authError.message);
     await loadProfile();
   };
 
   const signUp = async (d: RegisterData) => {
-    // Passo 1: cria a conta no Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ email: d.email, password: d.senha });
-    if (error) throw new Error(error.message);
+    const { data, error: signUpError } = await supabase.auth.signUp({ email: d.email, password: d.senha });
+    if (signUpError) throw new Error(signUpError.message);
     if (!data.session) {
       throw new Error('Conta criada. Confirme seu e-mail para continuar e depois faça login.');
     }
+    setSignedIn(true);
 
-    // Passo 2: completa o perfil no back-end (a senha não vai para o /me)
     try {
       const me = await api.patchMe({
         nome_completo: d.nome,
         cpf: d.cpf.replace(/\D/g, ''),
-        data_nascimento: d.dataNascimento.split('/').reverse().join('-'), // YYYY-MM-DD
+        data_nascimento: d.dataNascimento.split('/').reverse().join('-'),
         sexo: generoParaSexo(d.genero),
         telefone: d.telefone,
       });
       setUser(mapUser(me, data.session.user.email ?? d.email));
+      setError(null);
     } catch (e: any) {
-      // a conta já existe: carrega o perfil padrão para o usuário poder corrigir em "Editar perfil"
-      await loadProfile().catch(() => {});
+      await loadProfile();
       throw new PerfilIncompletoError(e.message);
     }
   };
@@ -82,6 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setSignedIn(false);
+    setError(null);
   };
 
   const updateUser = async (data: Partial<User>) => {
@@ -90,7 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, updateUser }}>
+    <AuthContext.Provider
+      value={{ user, signedIn, loading, error, refetch, signIn, signUp, signOut, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
