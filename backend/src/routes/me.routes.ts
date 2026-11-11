@@ -6,6 +6,7 @@ import { elegibilidadeBodySchema } from '../schemas/elegibilidade.schema';
 import {
   atualizarPerfil,
   getPerfil,
+  getPapel,
   listarDoacoes,
   listarNotificacoes,
   marcarNotificacaoLida,
@@ -20,6 +21,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const perfil = await getPerfil(req.user!.id, req.user!.email);
     res.json(perfil);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/papel', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const papel = await getPapel(req.user!.id);
+    res.json(papel);
   } catch (err) {
     next(err);
   }

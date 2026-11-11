@@ -109,3 +109,24 @@ export async function marcarNotificacaoLida(userId: string, notificacaoId: strin
   if (error) throw Internal(error.message);
   if (!data) throw NotFound('Notificação não encontrada');
 }
+
+export async function getPapel(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('hemocentro_usuarios')
+    .select('hemocentro_id, role')
+    .eq('user_id', userId)
+    .eq('ativo', true)
+    .maybeSingle();
+
+  if (error) throw Internal(error.message);
+
+  if (!data) {
+    return { eh_funcionario: false, hemocentro_id: null, role: null };
+  }
+
+  return {
+    eh_funcionario: true,
+    hemocentro_id: data.hemocentro_id,
+    role: data.role,
+  };
+}
