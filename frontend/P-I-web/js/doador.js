@@ -1,6 +1,8 @@
 import { navbar, toast, mascaraCpf, soDigitos } from './ui.js';
 import { apiFetch } from './http.js';
 import { HEMOCENTRO_ID } from './config.js';
+import { guardFuncionario } from './ui.js';
+await guardFuncionario();
 
 await navbar('doador');
 
@@ -44,7 +46,15 @@ $('form-busca').addEventListener('submit', async (e) => {
   } catch (err) {
     doador = null;
     if (err.codigo === 'NAO_ENCONTRADO') {
-      mostrarMsg('Doador não encontrado. Peça para se cadastrar pelo app.');
+      const cpfBuscado = soDigitos($('cpf').value);
+      // Substitui o texto pelo botão de cadastro com o CPF na URL
+      $('msg').innerHTML = `
+        <div class="alert alert-warning mb-2">Doador não encontrado.</div>
+        <button class="btn btn-primary" onclick="window.location.href='novo-cadastro.html?cpf=${cpfBuscado}'">
+          Criar conta para este doador
+        </button>
+      `;
+      $('msg').hidden = false;
     } else {
       toast(err.message || 'Erro ao buscar doador', 'falha');
     }

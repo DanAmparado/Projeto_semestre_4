@@ -62,3 +62,31 @@ export function cpfValido(cpf) {
   return true;
 }
 export const soDigitos = (v) => v.replace(/\D/g, '');
+
+export async function guardFuncionario() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      window.location.replace('login.html');
+      return;
+    }
+
+    // Substitua a URL base pela variável ou config que vocês usam no projeto web
+    const apiUrl = 'http://localhost:3000/api/v1'; 
+    const res = await fetch(`${apiUrl}/me/papel`, {
+      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    });
+    
+    const data = await res.json();
+    
+    if (!data.eh_funcionario) {
+      await supabase.auth.signOut();
+      alert('Painel exclusivo para funcionários');
+      window.location.replace('login.html');
+    }
+  } catch (error) {
+    console.error('Erro na validação de papel:', error);
+    window.location.replace('login.html');
+  }
+}

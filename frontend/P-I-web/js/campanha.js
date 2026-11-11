@@ -1,6 +1,8 @@
 import { navbar, toast } from './ui.js';
 import { apiFetch } from './http.js';
 import { HEMOCENTRO_ID } from './config.js';
+import { guardFuncionario } from './ui.js';
+await guardFuncionario();
 
 await navbar('campanha');
 

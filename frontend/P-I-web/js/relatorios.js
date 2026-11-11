@@ -1,5 +1,7 @@
 import { navbar, toast, esc } from './ui.js';
 import * as api from './servicos.js';
+import { guardFuncionario } from './ui.js';
+await guardFuncionario();
 
 await navbar('relatorios');
 const $ = (id) => document.getElementById(id);

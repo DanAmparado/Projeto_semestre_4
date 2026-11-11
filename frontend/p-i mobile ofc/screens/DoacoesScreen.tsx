@@ -23,7 +23,7 @@ export default function DoacoesScreen() {
   );
 
   return (
-    <Screen title="MINHAS DOAÇÕES">
+    <Screen title="MINHAS DOAÇÕES" showBack>
       <Text style={styles.intro}>
         Consulte suas doações feitas.{'\n'}Sua solidariedade faz o Nosso Sangue fluir!
       </Text>
