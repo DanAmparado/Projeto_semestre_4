@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nosso Sangue API
-  version: 1.9.0
+  version: 2.0.0
   description: |
     API RESTful para integração entre hemocentros, doadores e sensores IoT.
 
@@ -292,6 +292,33 @@ paths:
           $ref: '#/components/responses/ErroValidacao'
         '401':
           $ref: '#/components/responses/ErroNaoAutenticado'
+  
+    /me/papel:
+    get:
+      tags: [Me]
+      summary: Papel do usuário (funcionário ou doador)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Papel do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eh_funcionario:
+                    type: boolean
+                  hemocentro_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  role:
+                    type: string
+                    enum: [admin, operador, visualizador]
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
 
   /me/elegibilidade:
     post:
@@ -573,6 +600,81 @@ paths:
           $ref: '#/components/responses/ErroNaoAutorizado'
         '404':
           $ref: '#/components/responses/ErroNaoEncontrado'
+    post:
+      tags: [Doadores]
+      summary: Cria conta de doador (funcionário na recepção)
+      description: |
+        Cria conta no Supabase Auth via Admin API, com senha temporária.
+        Não substitui a sessão do funcionário. O doador usa a senha
+        temporária para entrar no app mobile.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [nome_completo, cpf, data_nascimento, sexo, tipo_sanguineo, telefone, email]
+              properties:
+                nome_completo:
+                  type: string
+                cpf:
+                  type: string
+                  pattern: '^\d{11}$'
+                data_nascimento:
+                  type: string
+                  format: date
+                sexo:
+                  type: string
+                  enum: [M, F, O]
+                tipo_sanguineo:
+                  $ref: '#/components/schemas/TipoSanguineo'
+                telefone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                peso:
+                  type: number
+                  minimum: 30
+                  maximum: 300
+      responses:
+        '201':
+          description: Conta criada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  email:
+                    type: string
+                  senha_temporaria:
+                    type: string
+                    example: 'ABCD-1234'
+        '400':
+          $ref: '#/components/responses/ErroValidacao'
+        '401':
+          $ref: '#/components/responses/ErroNaoAutenticado'
+        '403':
+          $ref: '#/components/responses/ErroNaoAutorizado'
+        '409':
+          description: Email já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
 
   /hemocentros/{id}/doacoes:
     post:
