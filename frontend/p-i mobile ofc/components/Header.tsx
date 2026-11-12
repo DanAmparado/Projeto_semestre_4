@@ -30,13 +30,13 @@ export default function Header({ title, showBack, logo }: Props) {
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 12 }]}>
       {showBack && (
-        <Pressable onPress={() => router.back()} style={[styles.back, { top: insets.top + 10 }]} hitSlop={12}>
+        <Pressable onPress={() => router.back()} style={[styles.back, { top: 12 }]} hitSlop={12}>
           <Ionicons name='chevron-back' size={26} color='#fff' />
         </Pressable>
       )}
       {logo ? <Logo size={56} showName={false} /> : <Text style={styles.title}>{title}</Text>}
       {signedIn && (
-        <Pressable onPress={confirmarLogout} style={[styles.logout, { top: insets.top + 12 }]} hitSlop={12}>
+        <Pressable onPress={confirmarLogout} style={[styles.logout, { top: 12 }]} hitSlop={12}>
           <MaterialCommunityIcons name='logout' size={22} color='#fff' />
         </Pressable>
       )}

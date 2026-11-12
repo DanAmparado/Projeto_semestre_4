@@ -1,4 +1,6 @@
 import { sessaoAtiva, sair } from './auth.js';
+import { supabase } from './supabase.js';
+import { API_URL } from './config.js';
 
 const MENU = [
   { id: 'inicio', texto: 'Início', href: 'inicio.html' },
@@ -64,29 +66,26 @@ export function cpfValido(cpf) {
 export const soDigitos = (v) => v.replace(/\D/g, '');
 
 export async function guardFuncionario() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.replace('login.html');
+    return false;
+  }
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      window.location.replace('login.html');
-      return;
-    }
-
-    // Substitua a URL base pela variável ou config que vocês usam no projeto web
-    const apiUrl = 'http://localhost:3000/api/v1'; 
-    const res = await fetch(`${apiUrl}/me/papel`, {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    const res = await fetch(`${API_URL}/me/papel`, {
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
     });
-    
-    const data = await res.json();
-    
-    if (!data.eh_funcionario) {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const papel = await res.json();
+    if (!papel.eh_funcionario) {
       await supabase.auth.signOut();
-      alert('Painel exclusivo para funcionários');
-      window.location.replace('login.html');
+      location.replace('login.html?erro=acesso-restrito');
+      return false;
     }
-  } catch (error) {
-    console.error('Erro na validação de papel:', error);
-    window.location.replace('login.html');
+    return true;
+  } catch (err) {
+    console.error('Erro na validação de papel:', err);
+    location.replace('login.html');
+    return false;
   }
 }
