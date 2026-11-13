@@ -1,7 +1,7 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Button from '../components/Button';
 import Screen from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
@@ -51,7 +51,9 @@ export default function PerfilScreen() {
         <Text style={styles.small}>{[idade(user.dataNascimento), user.genero].filter(Boolean).join(', ')}</Text>
 
         <View style={styles.badge}>
-          <MaterialCommunityIcons name='water' size={16} color='#fff' />
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="#fff">
+            <Path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z" />
+          </Svg>
           <Text style={styles.badgeText}>{user.tipoSanguineo ? `TIPO ${user.tipoSanguineo}` : 'TIPO SANGUÍNEO'}</Text>
         </View>
 

@@ -1,29 +1,20 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Redirect, Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from '../context/AuthContext';
 
-const icon = (name: React.ComponentProps<typeof MaterialCommunityIcons>['name']) =>
-  ({ color }: { color: any }) => <MaterialCommunityIcons name={name} size={30} color={color} />;
-
-export default function TabsLayout() {
-  const { signedIn, loading } = useAuth();
-  if (!loading && !signedIn) return <Redirect href='/welcome' />;
-
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.rose,
-        tabBarInactiveTintColor: '#fff',
-        tabBarStyle: { backgroundColor: colors.primary, height: 70, paddingTop: 6, borderTopWidth: 0 },
-        tabBarLabelStyle: { fontWeight: '800', fontSize: 10, paddingBottom: 6 },
-      }}
-    >
-      <Tabs.Screen name='home' options={{ title: 'HOME', tabBarIcon: icon('home-heart') }} />
-      <Tabs.Screen name='doacoes' options={{ title: 'DOAÇÕES', tabBarIcon: icon('blood-bag') }} />
-      <Tabs.Screen name='perfil' options={{ title: 'PERFIL', tabBarIcon: icon('account') }} />
-    </Tabs>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="signup" />
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

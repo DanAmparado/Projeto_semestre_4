@@ -1,8 +1,8 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme';
 import Logo from './Logo';
@@ -10,7 +10,6 @@ import Logo from './Logo';
 type Props = { title?: string; showBack?: boolean; logo?: boolean };
 
 export default function Header({ title, showBack, logo }: Props) {
-  const insets = useSafeAreaInsets();
   const { signedIn, signOut } = useAuth();
 
   const confirmarLogout = () => {
@@ -28,25 +27,65 @@ export default function Header({ title, showBack, logo }: Props) {
   };
 
   return (
-    <View style={[styles.bar, { paddingTop: insets.top + 12 }]}>
-      {showBack && (
-        <Pressable onPress={() => router.back()} style={[styles.back, { top: insets.top + 10 }]} hitSlop={12}>
-          <Ionicons name='chevron-back' size={26} color='#fff' />
-        </Pressable>
-      )}
-      {logo ? <Logo size={56} showName={false} /> : <Text style={styles.title}>{title}</Text>}
-      {signedIn && (
-        <Pressable onPress={confirmarLogout} style={[styles.logout, { top: insets.top + 12 }]} hitSlop={12}>
-          <MaterialCommunityIcons name='logout' size={22} color='#fff' />
-        </Pressable>
-      )}
-    </View>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <View style={styles.bar}>
+        <View style={styles.sideLeft}>
+          {showBack && (
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Svg width={26} height={26} viewBox="0 0 24 24" fill="#fff">
+                <Path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </Svg>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.center}>
+          {logo ? <Logo size={56} showName={false} /> : <Text style={styles.title}>{title}</Text>}
+        </View>
+
+        <View style={styles.sideRight}>
+          {signedIn && (
+            <Pressable onPress={confirmarLogout} hitSlop={12}>
+              <Svg width={24} height={24} viewBox="0 0 24 24" fill="#fff">
+                <Path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+              </Svg>
+            </Pressable>
+          )}
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { backgroundColor: colors.primary, paddingBottom: 14, alignItems: 'center', justifyContent: 'center', minHeight: 64 },
-  title: { color: '#fff', fontWeight: '800', fontSize: 17, letterSpacing: 0.3 },
-  back: { position: 'absolute', left: 12, zIndex: 2 },
-  logout: { position: 'absolute', right: 14, zIndex: 2 },
+  safeArea: {
+    backgroundColor: colors.primary,
+  },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 60,
+  },
+  sideLeft: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideRight: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  title: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 17,
+    letterSpacing: 0.3,
+  },
 });

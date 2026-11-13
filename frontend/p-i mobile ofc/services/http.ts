@@ -6,6 +6,10 @@ const TIMEOUT_MS = 15000;
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
 
+  if (!session?.access_token) {
+    throw new Error('Não autenticado. Faça login novamente.');
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -15,7 +19,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        Authorization: `Bearer ${session.access_token}`,
         ...((options.headers as Record<string, string>) ?? {}),
       },
     });
@@ -27,7 +31,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     const body = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw new Error(body?.erro?.mensagem ?? `Erro ${res.status}`);
+      const msg = body?.erro?.mensagem ?? `Erro ${res.status}`;
+      throw new Error(msg);
     }
 
     return body as T;
@@ -35,9 +40,6 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     clearTimeout(timeoutId);
     if (e.name === 'AbortError') {
       throw new Error('Servidor demorou para responder. Verifique sua conexão.');
-    }
-    if (e.message === 'Network request failed') {
-      throw new Error('Sem conexão com o servidor. Verifique sua internet.');
     }
     throw e;
   }
