@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { colors } from '../theme';
 
 type Props = {
@@ -15,11 +15,17 @@ type Props = {
 export default function Select({ placeholder, value, options, onChange, error, variant = 'pill' }: Props) {
   const [open, setOpen] = useState(false);
   const box = variant === 'dark' ? styles.dark : variant === 'gray' ? styles.gray : styles.pill;
+  const iconColor = variant === 'gray' ? colors.primary : colors.bright;
+
   return (
     <View style={{ width: '100%', marginBottom: 10 }}>
       <Pressable style={[styles.base, box, error ? { borderColor: '#000' } : null]} onPress={() => setOpen(true)}>
         <Text style={styles.text}>{value || placeholder}</Text>
-        <Ionicons name="caret-down" size={14} color={variant === 'gray' ? colors.primary : colors.bright} style={styles.icon} />
+        <View style={styles.icon}>
+          <Svg width={14} height={14} viewBox="0 0 24 24" fill={iconColor}>
+            <Path d="M7 10l5 5 5-5z" />
+          </Svg>
+        </View>
       </Pressable>
       {!!error && <Text style={styles.error}>{error}</Text>}
       <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
