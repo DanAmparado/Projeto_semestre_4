@@ -1,26 +1,30 @@
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
-import { supabase } from '../lib/supabase';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import Logo from '../components/Logo';
+import { useAuth } from '../context/AuthContext';
+import { colors } from '../theme';
 
-export default function Index() {
-  const [loading, setLoading] = useState(true);
-  const [loggedIn, setLoggedIn] = useState(false);
+// Splash: mostra a logo por ~1,8s e redireciona conforme a sessão.
+export default function Splash() {
+  const { signedIn, loading } = useAuth();
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setLoggedIn(!!data.session);
-      setLoading(false);
-    });
+    const t = setTimeout(() => setDone(true), 1800);
+    return () => clearTimeout(t);
   }, []);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+  if (done && !loading) return <Redirect href={signedIn ? '/home' : '/welcome'} />;
 
-  return <Redirect href={loggedIn ? '/home' : '/welcome'} />;
+  return (
+    <View style={styles.root}>
+      <Logo size={240} />
+      {loading && <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+});

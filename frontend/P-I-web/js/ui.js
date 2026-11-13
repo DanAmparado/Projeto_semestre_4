@@ -1,4 +1,6 @@
 import { sessaoAtiva, sair } from './auth.js';
+import { supabase } from './supabase.js';
+import { API_URL } from './config.js';
 
 const MENU = [
   { id: 'inicio', texto: 'Início', href: 'inicio.html' },
@@ -62,3 +64,28 @@ export function cpfValido(cpf) {
   return true;
 }
 export const soDigitos = (v) => v.replace(/\D/g, '');
+
+export async function guardFuncionario() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    location.replace('login.html');
+    return false;
+  }
+  try {
+    const res = await fetch(`${API_URL}/me/papel`, {
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const papel = await res.json();
+    if (!papel.eh_funcionario) {
+      await supabase.auth.signOut();
+      location.replace('login.html?erro=acesso-restrito');
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Erro na validação de papel:', err);
+    location.replace('login.html');
+    return false;
+  }
+}

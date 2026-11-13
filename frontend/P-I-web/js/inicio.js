@@ -1,8 +1,11 @@
 import { navbar, toast, esc } from './ui.js';
 import * as api from './servicos.js';
+import { guardFuncionario } from './ui.js';
 
 await navbar('inicio');
 
+document.addEventListener('DOMContentLoaded', async () => {
+  await guardFuncionario();
 // Estoque
 const grafico = document.getElementById('grafico');
 const rotulos = document.getElementById('rotulos');
@@ -74,3 +77,4 @@ lista.addEventListener('click', async (e) => {
 const tudo = () => { carregarEstoque(); carregarCamara(); carregarAlertas(); };
 tudo();
 setInterval(tudo, 15000);
+});

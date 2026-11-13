@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Button from '../components/Button';
 import Screen from '../components/Screen';
 import { useAuth } from '../context/AuthContext';
@@ -17,18 +17,41 @@ function idade(br: string) {
 }
 
 export default function PerfilScreen() {
-  const { user, signOut } = useAuth();
-  if (!user) return null;
+  const { user, loading, error, refetch } = useAuth();
+
+  if (loading) {
+    return (
+      <Screen title='PERFIL'>
+        <View style={styles.centerBox}>
+          <ActivityIndicator size='large' color={colors.primary} />
+          <Text style={styles.loadingText}>Carregando perfil...</Text>
+          <Text style={styles.hintText}>Se demorar, o servidor pode estar acordando.</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <Screen title='PERFIL'>
+        <View style={styles.centerBox}>
+          <Text style={styles.errorTitle}>Não foi possível carregar</Text>
+          <Text style={styles.errorMsg}>{error || 'Perfil indisponível'}</Text>
+          <Button size='sm' label='TENTAR NOVAMENTE' onPress={refetch} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
-    <Screen title="PERFIL">
+    <Screen title='PERFIL'>
       <View style={styles.card}>
         <View style={styles.avatar} />
         <Text style={styles.name}>{user.nome}</Text>
         <Text style={styles.small}>{[idade(user.dataNascimento), user.genero].filter(Boolean).join(', ')}</Text>
 
         <View style={styles.badge}>
-          <MaterialCommunityIcons name="water" size={16} color="#fff" />
+          <MaterialCommunityIcons name='water' size={16} color='#fff' />
           <Text style={styles.badgeText}>{user.tipoSanguineo ? `TIPO ${user.tipoSanguineo}` : 'TIPO SANGUÍNEO'}</Text>
         </View>
 
@@ -43,16 +66,9 @@ export default function PerfilScreen() {
           <Text style={styles.helpedNum}>{String(user.totalDoacoes ?? 0).padStart(2, '0')}</Text>
         </View>
 
-        <Button size="sm" label="EDITAR PERFIL" color={colors.black} onPress={() => router.push('/perfil/editar')} style={{ marginTop: 20 }} />
-        <Button size="sm" label="NOTIFICAÇÕES" onPress={() => router.push('/perfil/notificacoes')} style={{ marginTop: 12 }} />
+        <Button size='sm' label='EDITAR PERFIL' color={colors.black} onPress={() => router.push('/perfil/editar')} style={{ marginTop: 20 }} />
+        <Button size='sm' label='NOTIFICAÇÕES' onPress={() => router.push('/perfil/notificacoes')} style={{ marginTop: 12 }} />
       </View>
-
-      <Pressable
-        onPress={async () => { await signOut(); router.replace('/welcome'); }}
-        style={{ marginTop: 24 }}
-      >
-        <Text style={{ color: colors.primary, fontWeight: '800' }}>SAIR DA CONTA</Text>
-      </Pressable>
     </Screen>
   );
 }
@@ -68,4 +84,9 @@ const styles = StyleSheet.create({
   helped: { backgroundColor: colors.rose, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 24, alignItems: 'center', marginTop: 18 },
   helpedTitle: { color: colors.primary, fontWeight: '900', fontSize: 11 },
   helpedNum: { color: colors.primary, fontWeight: '900', fontSize: 22 },
+  centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, minHeight: 300 },
+  loadingText: { marginTop: 12, color: '#666', fontSize: 14 },
+  hintText: { marginTop: 8, color: '#999', fontSize: 12, textAlign: 'center' },
+  errorTitle: { fontSize: 16, color: colors.primary, fontWeight: '700', marginBottom: 8 },
+  errorMsg: { fontSize: 12, color: '#666', textAlign: 'center', marginBottom: 16 },
 });
