@@ -254,7 +254,7 @@ paths:
                   ok: { type: boolean }
                   versao: { type: string }
 
-  /me:
+    /me:
     get:
       tags: [Me]
       summary: Dados do usuário autenticado
@@ -292,8 +292,8 @@ paths:
           $ref: '#/components/responses/ErroValidacao'
         '401':
           $ref: '#/components/responses/ErroNaoAutenticado'
-  
-    /me/papel:
+
+  /me/papel:
     get:
       tags: [Me]
       summary: Papel do usuário (funcionário ou doador)
