@@ -254,7 +254,7 @@ paths:
                   ok: { type: boolean }
                   versao: { type: string }
 
-    /me:
+  /me:
     get:
       tags: [Me]
       summary: Dados do usuário autenticado
